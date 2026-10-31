@@ -55,3 +55,18 @@ test('Tapochek Avatar 3: no General header, DV P7 + HDR10+ + HDR10, summary with
   assert.equal(s.audio[10].kind, 'original');
   assert.equal(s.audio[10].author, undefined);
 });
+
+test('NNM: русская локализация MediaInfo, 3840x1600', () => {
+  const s = specFromMediainfo(parseMediainfoText(fx('xmen-nnm.mediainfo.txt')));
+  assert.equal(s.video.width, 3840);
+  assert.deepEqual(s.video.hdr, ['hdr10']);
+  assert.ok(s.uniqueId);
+  assert.ok(s.audio.some(a => a.lang === 'rus' && a.kind === 'dub'));
+  assert.ok(s.audio.some(a => a.lang === 'rus' && a.kind === 'avo' && /Гаврилов/.test(a.author ?? '')));
+});
+
+test('RuTor: MediaInfo из textarea с <br />', () => {
+  const s = specFromMediainfo(parseMediainfoText(fx('cinderella-rutor.mediainfo.txt')));
+  assert.equal(s.video.height, 2160);
+  assert.ok(s.audio.some(a => a.codec === 'DTS-HD MA' && a.lossless));
+});

@@ -91,7 +91,8 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if (reasons.length) return { verdict: 'REJECT', reasons, dims };
 
   // разрешение должно совпадать — иначе это грубый шаг (дело Radarr)
-  if ((current.video.height ?? 0) >= 2000 !== (cand.video.height ?? 0) >= 2000)
+  const is4k = (s: ReleaseSpec) => (s.video.width ?? 0) >= 3200 || (s.video.height ?? 0) >= 2000;
+  if (is4k(current) !== is4k(cand))
     return { verdict: 'KEEP', reasons: ['другой уровень качества (1080p vs 2160p) — решает Radarr'], dims };
 
   // 3) флаги на ручную проверку

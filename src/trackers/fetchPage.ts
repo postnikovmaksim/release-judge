@@ -16,12 +16,12 @@ function decode(buf: Buffer, contentType: string | null): string {
 export async function fetchPage(url: string): Promise<{ html: string; tracker: string }> {
   const t = trackerFor(url);
   if (!t) throw new FetchError(`unknown tracker: ${url}`);
-  const s = sessionFor(t);
-  if (!s?.cookie) throw new FetchError(`${t.id}: no session in Prowlarr`);
+  const s = t.cookieFrom === 'none' ? { cookie: '', userAgent: undefined } : sessionFor(t);
+  if (t.cookieFrom !== 'none' && !s?.cookie) throw new FetchError(`${t.id}: no session in Prowlarr`);
 
   if (t.flaresolverr) {
     const host = new URL(url).hostname.replace(/^www\./, '');
-    const cookies = s.cookie.split(/;\s*/).filter(Boolean).map(c => {
+    const cookies = s!.cookie.split(/;\s*/).filter(Boolean).map(c => {
       const i = c.indexOf('='); return { name: c.slice(0, i), value: c.slice(i + 1), domain: '.' + host };
     });
     const r = await fetch(`${config.flaresolverr.url}/v1`, {
@@ -34,7 +34,9 @@ export async function fetchPage(url: string): Promise<{ html: string; tracker: s
     return { html: j.solution.response, tracker: t.id };
   }
 
-  const r = await fetch(url, { headers: { Cookie: s.cookie, 'User-Agent': s.userAgent || DEFAULT_UA }, redirect: 'manual' });
+  const headers: Record<string, string> = { 'User-Agent': s?.userAgent || DEFAULT_UA };
+  if (s?.cookie) headers.Cookie = s.cookie;
+  const r = await fetch(url, { headers, redirect: 'manual' });
   if (r.status >= 300 && r.status < 400) throw new FetchError(`${t.id}: redirect to ${r.headers.get('location')} (session expired?)`, r.status);
   if (!r.ok) throw new FetchError(`${t.id}: HTTP ${r.status}`, r.status);
   return { html: decode(Buffer.from(await r.arrayBuffer()), r.headers.get('content-type')), tracker: t.id };

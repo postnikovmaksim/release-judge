@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { classifyAudio, extractAuthor, normLang } from './classify.js';
+import { classifyAudio, extractAuthor, normLang, normalizeHomoglyphs } from './classify.js';
 import type { ReleaseSpec } from './schema.js';
 
 const run = promisify(execFile);
@@ -29,6 +29,7 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
 
   const audio = tracks.filter(t => t['@type'] === 'Audio').map(a => {
     const lang = normLang(a.Language);
+    a = { ...a, Title: normalizeHomoglyphs(a.Title) };
     const commercial = `${a.Format_Commercial_IfAny ?? ''} ${a.Format ?? ''} ${a.Format_AdditionalFeatures ?? ''}`;
     return {
       lang,

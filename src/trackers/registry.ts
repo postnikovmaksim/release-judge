@@ -3,7 +3,7 @@ export interface TrackerDef {
   id: string;                     // TeamHD, RuTracker...
   hosts: RegExp;
   prowlarrName: RegExp;           // имя индексатора в Prowlarr
-  cookieFrom: 'settings' | 'status';
+  cookieFrom: 'settings' | 'status' | 'none';      // none — публичный трекер
   flaresolverr: boolean;
   mainPost: string;               // CSS-селектор главного поста
   mediainfo?: string;             // селектор <pre> c MediaInfo внутри главного поста
@@ -19,9 +19,9 @@ export const TRACKERS: TrackerDef[] = [
   { id: 'Kinozal', hosts: /(^|\.)kinozal\.(tv|me|guru)$/i, prowlarrName: /^Kinozal/i, cookieFrom: 'status', flaresolverr: false,
     mainPost: '.mn1_content, .content' },
   { id: 'NNM', hosts: /(^|\.)nnmclub\.(to|me)$/i, prowlarrName: /^NoNaMe/i, cookieFrom: 'status', flaresolverr: true,
-    mainPost: '.postbody:first' },
-  { id: 'RuTor', hosts: /(^|\.)rutor\.(info|is|org)$/i, prowlarrName: /^RuTor/i, cookieFrom: 'status', flaresolverr: false,
-    mainPost: '#details' },
+    mainPost: '.postbody:first', mediainfo: '.spoiler-wrap:has(.spoiler-head:contains("MediaInfo")) .spoiler-body pre' },
+  { id: 'RuTor', hosts: /(^|\.)rutor\.(info|is|org)$/i, prowlarrName: /^RuTor/i, cookieFrom: 'none', flaresolverr: false,
+    mainPost: '#details', mediainfo: 'textarea.hidearea' },
 ];
 
 export const trackerFor = (url: string) => TRACKERS.find(t => t.hosts.test(new URL(url).hostname));

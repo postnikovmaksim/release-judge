@@ -30,9 +30,24 @@ export function classifyAudio(title: string | undefined, lang: string, originalL
 export function extractAuthor(title?: string): string | undefined {
   if (!title) return undefined;
   const s = title
+    .replace(/^перевод\s*:\s*/i, '')
+    .replace(/^(профессиональный|авторский|любительский)\s*/i, '')
+    .replace(/^\([^)]*\)\s*/, '')
     .replace(/^(russian|rus|ukrainian|ukr|english|eng)\s*[,:-]?\s*/i, '')
     .replace(/^(дубляж|полное дублирование|dub|многоголосый закадровый|двухголосый закадровый|одноголосый закадровый|авторский|закадровый|MVO|DVO|AVO|VO|D|P|A)(?=[\s,:-]|$)\s*[,:-]?\s*/i, '')
     .replace(/\b(blu-?ray|bd|dvd|web|itunes|netflix|custom|cee|eur|usa)\b.*$/i, '')
     .replace(/[\s,|/-]+$/g, '').trim();
   return s || undefined;
+}
+
+// Латинские «двойники» кириллических букв — некоторые релизеры (NNM) так обфусцируют названия дорожек
+const HOMO: Record<string, string> = {
+  a: 'а', b: 'ь', c: 'с', e: 'е', g: 'д', k: 'к', m: 'т', n: 'п', o: 'о', p: 'р', u: 'и', x: 'х', y: 'у', '6': 'б', '3': 'з',
+  A: 'А', B: 'В', C: 'С', E: 'Е', H: 'Н', K: 'К', M: 'М', O: 'О', P: 'Р', T: 'Т', X: 'Х', Y: 'У',
+};
+/** В словах, где смешаны кириллица и латиница, латинские двойники заменяются кириллицей. Чисто латинские слова не трогаем. */
+export function normalizeHomoglyphs(s?: string): string | undefined {
+  if (!s) return s;
+  return s.replace(/[A-Za-zА-Яа-яЁё0-9]+/g, w =>
+    /[А-Яа-яЁё]/.test(w) && /[A-Za-z]/.test(w) ? [...w].map(ch => HOMO[ch] ?? ch).join('') : w);
 }

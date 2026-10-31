@@ -1,0 +1,388 @@
+Общее
+Уникальный идентификатор : 167347918881297113279602428469816693822 (0x7DE6096C68A9BB63B17674ECC59D943E)
+Полное имя : <redacted>
+Формат : Matroska
+Версия формата : Version 4
+Размер файла : 12,2 Гбайт
+Продолжительность : 1 ч. 44 м.
+Общий поток : 16,7 Мбит/сек
+Частота кадров : 23,976 кадра/сек
+Заголовок : Люgu Иkc / X-Men
+Кодирование произвёл : SHADOW
+Описание : В мире, где существуют и подвергаются дискриминации мутанты, формируются две группы для неизбежного столкновения: Братство сторонников превосходства и пацифистские Люди Икс.
+Дата выпуска : 2000
+Дата кодирования : 2026-03-10 10:24:56 UTC
+Программа кодирования : mkvmerge 82.0 ('I'm The President') 64-bit
+Библиотека кодирования : libebml v1.4.5 + libmatroska v1.7.1 / Lavf61.7.100
+Обложка : Yes
+Описание обложки : cover
+Тип обложки : Cover
+Attachments : cover
+PUBLISHER : buba5473 для NNM-Club
+Видео
+Идентификатор : 1
+Формат : AV1
+Формат/Информация : AOMedia Video 1
+Профиль формата : Main@L5.0
+HDR format : SMPTE ST 2086, HDR10 compatible / SMPTE ST 2086, HDR10 compatible
+Идентификатор кодека : V_AV1
+Продолжительность : 1 ч. 44 м.
+Битрейт : 12,6 Мбит/сек
+Ширина : 3 840 пикселей
+Высота : 1 600 пикселей
+Соотношение сторон : 2,40:1
+Режим частоты кадров : Постоянный
+Частота кадров : 23,976 (24000/1001) кадра/сек
+Цветовое пространство : YUV
+Субдискретизация насыщенности : 4:2:0 (Type 2)
+Битовая глубина : 10 бит
+Бит/(Пиксели*Кадры) : 0.085
+Размер потока : 9,17 Гбайт (75%)
+Заголовок : X-Men.2000.MULTi.VFF.2160p.HDR10.BluRay.10Bits.OPUS.5.1.AV1-SHADOW
+Язык : No linguistic content or not applicable
+Default : Нет
+Forced : Нет
+Цветовой диапазон : Limited
+Основные цвета : BT.2020
+Характеристики трансфера : PQ
+Коэффициенты матрицы : BT.2020 non-constant
+Mastering display color primaries : Display P3
+MasteringDisplay_ColorPrimaries_Original : Display P3 / Display P3
+Mastering display luminance : min: 0.0050 cd/m2, max: 1000 cd/m2
+Аудио #1
+Идентификатор : 2
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 424 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 317 Мбайт (3%)
+Заголовок : Пepeвog: Пpoфeccuoнaльный (gy6лupoвaнный) CPIG
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : Russian (RU)
+Default : Да
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Аудио #2
+Идентификатор : 3
+Формат : AC-3
+Формат/Информация : Audio Coding 3
+Коммерческое название : Dolby Digital
+Идентификатор кодека : A_AC3
+Продолжительность : 1 ч. 44 м.
+Вид битрейта : Постоянный
+Битрейт : 192 Кбит/сек
+Каналы : 2 канала
+Channel layout : L R
+Частота : 48,0 КГц
+Частота кадров : 31,250 кадров/сек (1536 SPF)
+Метод сжатия : С потерями
+Размер потока : 143 Мбайт (1%)
+Заголовок : Пepeвog: Пpoфeccuoнaльный (мнoгoгoлocый зakagpoвый) HTB
+Язык : Russian (RU)
+Service kind : Complete Main
+Default : Нет
+Forced : Нет
+Dialog Normalization : -27 dB
+dialnorm_Average : -27 dB
+dialnorm_Minimum : -27 dB
+dialnorm_Maximum : -27 dB
+Аудио #3
+Идентификатор : 4
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 418 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 312 Мбайт (2%)
+Заголовок : Пepeвog: Пpoфeccuoнaльный (мнoгoгoлocый зakagpoвый) Kuнoмaнuя
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : Russian (RU)
+Default : Нет
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Аудио #4
+Идентификатор : 5
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 417 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 311 Мбайт (2%)
+Заголовок : Пepeвog: Пpoфeccuoнaльный (gвyxгoлocый зakagpoвый) Глaнц u Kopoлeвa
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : Russian (RU)
+Default : Нет
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Аудио #5
+Идентификатор : 6
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 421 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 314 Мбайт (3%)
+Заголовок : Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Aнgpeй Гaвpuлoв
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : Russian (RU)
+Default : Нет
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Аудио #6
+Идентификатор : 7
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 418 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 312 Мбайт (2%)
+Заголовок : Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Юpuй Жuвoв
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : Russian (RU)
+Default : Нет
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Аудио #7
+Идентификатор : 8
+Формат : AC-3
+Формат/Информация : Audio Coding 3
+Коммерческое название : Dolby Digital
+Идентификатор кодека : A_AC3
+Продолжительность : 1 ч. 44 м.
+Вид битрейта : Постоянный
+Битрейт : 192 Кбит/сек
+Каналы : 2 канала
+Channel layout : L R
+Частота : 48,0 КГц
+Частота кадров : 31,250 кадров/сек (1536 SPF)
+Метод сжатия : С потерями
+Размер потока : 143 Мбайт (1%)
+Заголовок : Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Aнgpeй Дoльckuй
+Язык : Russian (RU)
+Service kind : Complete Main
+Default : Нет
+Forced : Нет
+Dialog Normalization : -27 dB
+dialnorm_Average : -27 dB
+dialnorm_Minimum : -27 dB
+dialnorm_Maximum : -27 dB
+Аудио #8
+Идентификатор : 9
+Формат : AC-3
+Формат/Информация : Audio Coding 3
+Коммерческое название : Dolby Digital
+Идентификатор кодека : A_AC3
+Продолжительность : 1 ч. 44 м.
+Вид битрейта : Постоянный
+Битрейт : 192 Кбит/сек
+Каналы : 2 канала
+Channel layout : L R
+Частота : 48,0 КГц
+Частота кадров : 31,250 кадров/сек (1536 SPF)
+Метод сжатия : С потерями
+Размер потока : 143 Мбайт (1%)
+Заголовок : Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Cepгeй Buзгyнoв
+Язык : Russian (RU)
+Service kind : Complete Main
+Default : Нет
+Forced : Нет
+Dialog Normalization : -27 dB
+dsurmod : Not Dolby Surround encoded
+dialnorm_Average : -27 dB
+dialnorm_Minimum : -27 dB
+dialnorm_Maximum : -27 dB
+Аудио #9
+Идентификатор : 10
+Формат : AC-3
+Формат/Информация : Audio Coding 3
+Коммерческое название : Dolby Digital
+Идентификатор кодека : A_AC3
+Продолжительность : 1 ч. 44 м.
+Вид битрейта : Постоянный
+Битрейт : 640 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C LFE Ls Rs
+Частота : 48,0 КГц
+Частота кадров : 31,250 кадров/сек (1536 SPF)
+Метод сжатия : С потерями
+Размер потока : 478 Мбайт (4%)
+Заголовок : Пepeвog: Ogнoгoлocый зakagpoвый, A. Hacлegнukoв
+Язык : Russian (RU)
+Service kind : Complete Main
+Default : Нет
+Forced : Нет
+Dialog Normalization : -27 dB
+cmixlev : -3.0 dB
+surmixlev : -3 dB
+dialnorm_Average : -27 dB
+dialnorm_Minimum : -27 dB
+dialnorm_Maximum : -27 dB
+Аудио #10
+Идентификатор : 11
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 422 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 315 Мбайт (3%)
+Заголовок : Пepeвog: Ogнoгoлocый зakagpoвый, Cepгeй Kyзнeцoв
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : Russian (RU)
+Default : Нет
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Аудио #11
+Идентификатор : 12
+Формат : Opus
+Идентификатор кодека : A_OPUS
+Продолжительность : 1 ч. 44 м.
+Битрейт : 427 Кбит/сек
+Каналы : 6 каналов
+Channel layout : L R C Lb Rb LFE
+Частота : 48,0 КГц
+Частота кадров : 50,000 кадров/сек (960 SPF)
+Метод сжатия : С потерями
+Размер потока : 319 Мбайт (3%)
+Библиотека кодирования : opusenc from opus-tools 0.2-34-g98f3ddc
+Язык : English (US)
+Default : Нет
+Forced : Нет
+ENCODER_OPTIONS : --bitrate 512 --vbr
+Текст #1
+Идентификатор : 13
+Формат : UTF-8
+Идентификатор кодека : S_TEXT/UTF8
+Идентификатор кодека/Информация : UTF-8 Plain Text
+Продолжительность : 1 ч. 21 м.
+Битрейт : 0 бит/сек
+Частота кадров : 0,001 кадр/сек
+Count of elements : 3
+Размер потока : 160 байт (0%)
+Заголовок : Фopcupoвaнныe
+Язык : Russian (RU)
+Default : Да
+Forced : Нет
+Текст #2
+Идентификатор : 14
+Формат : UTF-8
+Идентификатор кодека : S_TEXT/UTF8
+Идентификатор кодека/Информация : UTF-8 Plain Text
+Продолжительность : 1 ч. 34 м.
+Битрейт : 57 бит/сек
+Частота кадров : 0,108 кадр/сек
+Count of elements : 611
+Размер потока : 39,6 Кбайт (0%)
+Язык : Russian (RU)
+Default : Нет
+Forced : Нет
+Текст #3
+Идентификатор : 15
+Формат : UTF-8
+Идентификатор кодека : S_TEXT/UTF8
+Идентификатор кодека/Информация : UTF-8 Plain Text
+Продолжительность : 1 ч. 34 м.
+Битрейт : 35 бит/сек
+Частота кадров : 0,108 кадр/сек
+Count of elements : 610
+Размер потока : 24,5 Кбайт (0%)
+Язык : English (US)
+Default : Нет
+Forced : Нет
+Текст #4
+Идентификатор : 16
+Формат : UTF-8
+Идентификатор кодека : S_TEXT/UTF8
+Идентификатор кодека/Информация : UTF-8 Plain Text
+Продолжительность : 1 ч. 34 м.
+Битрейт : 38 бит/сек
+Частота кадров : 0,132 кадр/сек
+Count of elements : 747
+Размер потока : 26,9 Кбайт (0%)
+Заголовок : SDH
+Язык : English (US)
+Default : Нет
+Forced : Нет
+Изображения
+Тип : Cover
+Заголовок : cover
+Формат : JPEG
+Режим смешивания : Attachment
+Ширина : 477 пикселей
+Высота : 600 пикселей
+Цветовое пространство : YUV
+Субдискретизация насыщенности : 4:4:4
+Битовая глубина : 8 бит
+Метод сжатия : С потерями
+Размер потока : 310 Кбайт (0%)
+Цветовой диапазон : Full
+Основные цвета : BT.709
+Характеристики трансфера : sRGB/sYCC
+Коэффициенты матрицы : Identity
+ColorSpace_ICC : RGB
+colour_primaries_ICC_Description : sRGB IEC61966-2.1
+Меню
+00:00:00.000 : Main Titles
+00:01:19.287 : Poland 1944
+00:04:18.132 : The Kiss of Death
+00:05:56.021 : The Mutant Problem
+00:07:56.058 : We Are the Future
+00:09:23.687 : King of the Cage
+00:11:37.696 : Freak
+00:14:38.502 : Two of a Kind
+00:18:01.663 : In the Midst of Mutants
+00:20:49.664 : Failure
+00:22:09.118 : Strange New World
+00:23:58.645 : A School for the Gifted
+00:28:45.848 : The Lower Levels
+00:29:55.167 : Kelly's New Aide
+00:32:06.507 : The Adamantium Man
+00:33:37.681 : The Mutant Brotherhood
+00:36:37.236 : Stay Away from My Girl
+00:38:25.177 : Rogue's Power
+00:41:11.885 : One of Us
+00:44:13.859 : The Runaway
+00:45:50.455 : Cerebro
+00:48:41.543 : Sabotage
+00:50:22.435 : Logan's Promise
+00:52:05.830 : The Brotherhood Attacks
+00:54:58.211 : Stand-Off
+00:58:11.153 : There's a War Coming
+00:59:19.764 : Magneto's Plan
+01:01:54.960 : Death of a Mutant
+01:03:17.626 : A Fallen Leader
+01:06:02.374 : Assault on a Lady
+01:08:39.781 : The Attack Plan
+01:12:21.378 : Mutant vs. Mutant
+01:18:03.803 : Magneto's Prisoners
+01:20:53.222 : The X-Men Strike Back
+01:24:28.062 : To Save a City
+01:26:58.587 : Logan's Sacrifice
+01:29:08.509 : Recovery
+01:31:47.209 : Saying Goodbye
+01:33:12.878 : Friendly Enemies
+01:35:12.122 : End Titles

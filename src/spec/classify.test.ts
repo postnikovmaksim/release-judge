@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyAudio, extractAuthor } from './classify.js';
+import { classifyAudio, extractAuthor, normalizeHomoglyphs } from './classify.js';
 
 test('classify typical track titles', () => {
   const c = (t: string, l = 'rus') => classifyAudio(t, l, 'eng');
@@ -37,4 +37,14 @@ test('explicit leading code wins over words in studio name', () => {
   assert.equal(classifyAudio('| AVO Гоблин', 'rus', 'eng'), 'avo');
   assert.equal(classifyAudio('Дубляж Пифагор', 'rus', 'eng'), 'dub');
   assert.equal(classifyAudio('Vox Mediaworks', 'rus', 'eng'), 'unknown');
+});
+
+test('NNM: обфускация латинскими двойниками', () => {
+  const t = (s: string) => normalizeHomoglyphs(s)!;
+  assert.equal(t('Пepeвog: Пpoфeccuoнaльный (gy6лupoвaнный) CPIG'), 'Перевод: Профессиональный (дублированный) CPIG');
+  assert.equal(classifyAudio(t('Пepeвog: Пpoфeccuoнaльный (gy6лupoвaнный) CPIG'), 'rus', 'eng'), 'dub');
+  assert.equal(classifyAudio(t('Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Aнgpeй Гaвpuлoв'), 'rus', 'eng'), 'avo');
+  assert.equal(classifyAudio(t('Пepeвog: Пpoфeccuoнaльный (мнoгoгoлocый зakagpoвый) HTB'), 'rus', 'eng'), 'mvo');
+  assert.equal(extractAuthor(t('Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Aнgpeй Гaвpuлoв')), 'Андрей Гаврилов');
+  assert.equal(t('Original English'), 'Original English');
 });
