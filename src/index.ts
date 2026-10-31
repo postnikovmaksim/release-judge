@@ -3,6 +3,7 @@ import { config, loadRules } from './config.js';
 import { db } from './db.js';
 import { runSnapshot } from './snapshot.js';
 import { parseTopic } from './topic.js';
+import { judgeTopic } from './judge/service.js';
 
 const app = Fastify({ logger: true });
 const rules = loadRules();
@@ -34,6 +35,20 @@ app.post('/topic/parse', async (req, reply) => {
   if (!url) return reply.code(400).send({ error: 'url required' });
   try { return await parseTopic(url, { force }); }
   catch (e: any) { return reply.code(502).send({ error: e.message }); }
+});
+
+app.post('/judge', async (req, reply) => {
+  const { movieId, url, force } = (req.body ?? {}) as { movieId?: number; url?: string; force?: boolean };
+  if (!movieId || !url) return reply.code(400).send({ error: 'movieId and url required' });
+  try { return await judgeTopic(movieId, url, { force }); }
+  catch (e: any) { return reply.code(502).send({ error: e.message }); }
+});
+
+app.get('/verdicts', async (req) => {
+  const { limit = 50, verdict } = req.query as { limit?: number; verdict?: string };
+  const rows = db.prepare(`SELECT * FROM verdict ${verdict ? 'WHERE verdict = ?' : ''} ORDER BY id DESC LIMIT ?`)
+    .all(...(verdict ? [verdict, Number(limit)] : [Number(limit)])) as any[];
+  return rows.map(r => ({ ...r, reasons: JSON.parse(r.reasons) }));
 });
 
 app.listen({ port: config.port, host: '0.0.0.0' });
