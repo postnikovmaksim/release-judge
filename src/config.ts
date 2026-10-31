@@ -14,7 +14,8 @@ export const config = {
   dataDir: env('DATA_DIR', './state'),
   configDir: env('CONFIG_DIR', './config'),
   radarr: { url: env('RADARR_URL', 'http://radarr:7878'), apiKey: env('RADARR_API_KEY', '') },
-  prowlarr: { url: env('PROWLARR_URL', 'http://prowlarr:9696'), apiKey: env('PROWLARR_API_KEY', '') },
+  prowlarr: { url: env('PROWLARR_URL', 'http://prowlarr:9696'), apiKey: env('PROWLARR_API_KEY', ''), db: env('PROWLARR_DB', '/prowlarr/prowlarr.db') },
+  flaresolverr: { url: env('FLARESOLVERR_URL', 'http://flaresolverr:8191') },
   hardlinks: { url: env('HARDLINKS_URL', 'http://media-hardlinks:3000') },
   llm: {
     baseURL: env('LLM_BASE_URL', 'http://litellm:4000/v1'),

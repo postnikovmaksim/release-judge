@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { config, loadRules } from './config.js';
 import { db } from './db.js';
 import { runSnapshot } from './snapshot.js';
+import { parseTopic } from './topic.js';
 
 const app = Fastify({ logger: true });
 const rules = loadRules();
@@ -26,6 +27,13 @@ app.post('/snapshot', async (req) => {
 app.get('/movie/:id/spec', async (req, reply) => {
   const row = db.prepare('SELECT * FROM file_spec WHERE movie_id = ?').get((req.params as any).id) as any;
   return row ? { ...row, spec: JSON.parse(row.spec) } : reply.code(404).send({ error: 'not found' });
+});
+
+app.post('/topic/parse', async (req, reply) => {
+  const { url, force } = (req.body ?? {}) as { url?: string; force?: boolean };
+  if (!url) return reply.code(400).send({ error: 'url required' });
+  try { return await parseTopic(url, { force }); }
+  catch (e: any) { return reply.code(502).send({ error: e.message }); }
 });
 
 app.listen({ port: config.port, host: '0.0.0.0' });

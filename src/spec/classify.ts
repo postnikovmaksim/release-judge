@@ -1,9 +1,9 @@
 /** Классификация аудиодорожек по названию + нормализация языков. Общая для файлов и описаний раздач. */
 export type AudioKind = 'dub' | 'mvo' | 'dvo' | 'avo' | 'vo' | 'original' | 'commentary' | 'unknown';
 
-const LANG: Record<string, string> = { ru: 'rus', rus: 'rus', uk: 'ukr', ukr: 'ukr', en: 'eng', eng: 'eng', ja: 'jpn', jpn: 'jpn',
+const LANG: Record<string, string> = { russian: 'rus', english: 'eng', ukrainian: 'ukr', japanese: 'jpn', french: 'fre', german: 'ger', kazakh: 'kaz', korean: 'kor', italian: 'ita', spanish: 'spa', chinese: 'chi', русский: 'rus', английский: 'eng', украинский: 'ukr', японский: 'jpn', ru: 'rus', rus: 'rus', uk: 'ukr', ukr: 'ukr', en: 'eng', eng: 'eng', ja: 'jpn', jpn: 'jpn',
   fr: 'fre', fre: 'fre', fra: 'fre', de: 'ger', ger: 'ger', deu: 'ger', kk: 'kaz', kaz: 'kaz', ko: 'kor', kor: 'kor', it: 'ita', ita: 'ita', es: 'spa', spa: 'spa' };
-export const normLang = (l?: string) => (l ? LANG[l.toLowerCase()] ?? l.toLowerCase() : 'und');
+export const normLang = (l?: string) => { if (!l) return 'und'; const k = l.toLowerCase().trim().split(/[\s(,]/)[0]; return LANG[k] ?? k; };
 
 const RULES: [AudioKind, RegExp][] = [
   ['commentary', /коммент|comment/i],

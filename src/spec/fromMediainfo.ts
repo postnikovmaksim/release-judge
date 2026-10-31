@@ -16,12 +16,14 @@ const num = (v?: string) => (v && !isNaN(+v) ? +v : undefined);
 export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSpec {
   const g = tracks.find(t => t['@type'] === 'General') ?? {};
   const v = tracks.find(t => t['@type'] === 'Video') ?? {};
-  const hdrFmt = `${v.HDR_Format ?? ''} ${v.HDR_Format_Compatibility ?? ''}`;
+  const hdrFmt = `${v.HDR_Format ?? ''} ${v.HDR_Format_Compatibility ?? ''} ${v.Format_Commercial_IfAny ?? ''}`;
   const hdr: ReleaseSpec['video']['hdr'] = [];
   if (/dolby vision/i.test(hdrFmt)) hdr.push('dv');
   if (/HDR10\+|SMPTE ST 2094/i.test(hdrFmt)) hdr.push('hdr10plus');
   if (/HDR10|SMPTE ST 2086/i.test(hdrFmt)) hdr.push('hdr10');
   if (/HLG/i.test(hdrFmt)) hdr.push('hlg');
+  if (!hdr.length && /PQ|SMPTE ST 2084/i.test(v.transfer_characteristics ?? '')) hdr.push('hdr10');
+  if (!hdr.length && /HLG|ARIB STD-B67/i.test(v.transfer_characteristics ?? '')) hdr.push('hlg');
   const dvProf = (v.HDR_Format_Profile ?? '').match(/\.(0?\d)\./)?.[1];
   const orig = originalLang ? normLang(originalLang) : undefined;
 
@@ -63,4 +65,15 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
     sizeBytes: num(g.FileSize),
     confidence: 1,
   };
+}
+/** Дополнить тип/автора дорожек подсказками из описания (если в MediaInfo названия неинформативны). */
+export function enrichAudio(spec: ReleaseSpec, hints: Map<number, string>) {
+  spec.audio.forEach((a, i) => {
+    const h = hints.get(i + 1);
+    if (!h) return;
+    const kind = classifyAudio(h, a.lang);
+    if (a.kind === 'unknown' || (kind !== 'unknown' && kind !== a.kind && a.kind !== 'commentary')) a.kind = kind;
+    if (!a.author) a.author = extractAuthor(h);
+    if (!a.title || a.title.length < 5) a.title = h;
+  });
 }
