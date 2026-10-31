@@ -26,12 +26,12 @@ export interface DiscoveryStats { movies: number; candidates: number; judged: nu
 
 export async function checkMovie(m: any, log: (s: string) => void, stats: DiscoveryStats) {
   const d = config.discovery;
-  const res = m.movieFile.quality?.quality?.resolution ?? 0;
+  const fileQ = m.movieFile.quality?.quality?.id;   // тот же уровень = то же качество Radarr (Remux-2160p к Remux-2160p)
   const releases: any[] = await radarr(`/release?movieId=${m.id}`);
   const seen = new Set<string>();
   const cands = releases.filter(r => {
     if (d.excludeIndexerIds.includes(r.indexerId)) return false;
-    if ((r.quality?.quality?.resolution ?? 0) !== res) return false;             // другой уровень — дело Radarr
+    if (r.quality?.quality?.id !== fileQ) return false;   // выше — дело Radarr, ниже (encode вместо remux) — не рассматриваем
     if (r.customFormatScore < 0) return false;                                   // BR-DISK, DV5, апскейл...
     if (!r.approved && r.rejections?.some((x: string) => !UPGRADE_REJECTION.test(x))) return false;
     const url = r.infoUrl;

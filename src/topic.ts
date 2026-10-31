@@ -16,7 +16,7 @@ const save = db.prepare(`INSERT INTO topic (url, tracker, html_hash, spec, parse
 /** Скачать и разобрать страницу раздачи. Кэш — 24 ч (если не force). LLM-фолбэк для описаний без MediaInfo — следующий шаг. */
 export async function parseTopic(url: string, opts: { force?: boolean } = {}): Promise<TopicResult> {
   const c = getCached.get(url) as any;
-  if (c && !opts.force && Date.now() - Date.parse(c.fetched_at + 'Z') < 24 * 3600_000 && c.spec) {
+  if (c && !opts.force && c.parser === 'mediainfo' && Date.now() - Date.parse(c.fetched_at + 'Z') < 24 * 3600_000) {   // неудачные разборы не кэшируем
     const p = JSON.parse(c.spec);
     return { ...p, cached: true };
   }
