@@ -1,4 +1,4 @@
-# Compose Manager project "automation" на Unraid.
+# Compose Manager project "automation" на Unraid. Данные: /mnt/user/appdata/automation/{release-judge,litellm}
 # Секреты — в .env рядом (не в git): RADARR_API_KEY, PROWLARR_API_KEY, LITELLM_MASTER_KEY, GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, MISTRAL_API_KEY
 services:
   release-judge:
@@ -8,8 +8,8 @@ services:
     ports: ["3100:3100"]
     volumes:
       - /mnt/user/data:/data:ro                       # те же пути, что у Radarr (/data/media, /data/torrents)
-      - /mnt/user/appdata/release-judge/state:/state
-      - /mnt/user/appdata/release-judge/config:/config
+      - /mnt/user/appdata/automation/release-judge/state:/state
+      - /mnt/user/appdata/automation/release-judge/config:/config
     environment:
       RADARR_URL: http://192.168.1.244:7878
       RADARR_API_KEY: ${RADARR_API_KEY}
@@ -28,7 +28,7 @@ services:
     ports: ["4000:4000"]
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     volumes:
-      - /mnt/user/appdata/litellm/config.yaml:/app/config.yaml:ro
+      - /mnt/user/appdata/automation/litellm/config.yaml:/app/config.yaml:ro
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
