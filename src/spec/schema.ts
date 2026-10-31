@@ -34,6 +34,7 @@ export const ReleaseSpec = z.object({
   }),
   audio: z.array(AudioTrack),
   subs: z.array(Subtitle).default([]),
+  uniqueId: z.string().optional(),                    // MediaInfo General Unique ID — совпадает у файла и дампа той же раздачи
   edition: z.string().optional(),
   sizeBytes: z.number().optional(),
   tracker: z.string().optional(),

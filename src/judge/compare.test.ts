@@ -48,6 +48,24 @@ test('локализованный видеоряд -> REVIEW', () => {
 });
 
 test('равное видео/звук: TeamHD побеждает прочий трекер (тай-брейк)', () => {
-  assert.equal(judge(rt(), rt(), rules, { currentTracker: undefined, candidateTracker: 'TeamHD' }).verdict, 'UPGRADE');
-  assert.equal(judge(rt(), rt(), rules, { currentTracker: 'TeamHD', candidateTracker: 'RuTracker' }).verdict, 'KEEP');
+  const other = () => { const s = rt(); s.uniqueId = 'other'; return s; };
+  assert.equal(judge(rt(), other(), rules, { currentTracker: undefined, candidateTracker: 'TeamHD' }).verdict, 'UPGRADE');
+  assert.equal(judge(rt(), other(), rules, { currentTracker: 'TeamHD', candidateTracker: 'RuTracker' }).verdict, 'KEEP');
+});
+
+test('тот же релиз (Unique ID совпадает) -> KEEP, даже если в описании FEL', () => {
+  const cur = rt(); cur.video.dvLayer = undefined;
+  const j = judge(cur, rt(), rules, {});
+  assert.equal(j.verdict, 'KEEP');
+  assert.match(j.reasons[0], /тот же релиз/);
+});
+
+test('P7 со слоем неизвестно vs P7 FEL — не апгрейд по слою', () => {
+  const cur = rt(); cur.video.dvLayer = undefined; cur.uniqueId = 'other';
+  assert.equal(judge(cur, rt(), rules, {}).verdict, 'KEEP');
+});
+
+test('дубляж EAC3 -> AC3 не считается потерей', () => {
+  const cur = thd(); cur.audio[0].codec = 'EAC3';
+  assert.equal(judge(cur, rt(), rules, {}).verdict, 'UPGRADE');
 });

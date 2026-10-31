@@ -13,7 +13,7 @@ const KEYMAP: Record<string, string> = {
   'hdr format': 'HDR_Format_Full', 'language': 'Language', 'title': 'Title', 'channel(s)': 'Channels',
   'bit rate': 'BitRate', 'compression mode': 'Compression_Mode', 'forced': 'Forced', 'default': 'Default',
   'transfer characteristics': 'transfer_characteristics', 'width': 'Width', 'height': 'Height', 'file size': 'FileSize', 'complete name': 'CompleteName',
-  'movie name': 'Title', 'duration': 'Duration', 'frame rate': 'FrameRate', 'bit depth': 'BitDepth',
+  'movie name': 'Title', 'unique id': 'UniqueID', 'duration': 'Duration', 'frame rate': 'FrameRate', 'bit depth': 'BitDepth',
 };
 
 const num = (s?: string) => (s ? Number(s.replace(/[^\d.]/g, '')) : NaN);

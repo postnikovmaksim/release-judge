@@ -63,6 +63,7 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
     },
     audio, subs,
     sizeBytes: num(g.FileSize),
+    uniqueId: g.UniqueID ? String(g.UniqueID).split(/\s/)[0] : undefined,
     confidence: 1,
   };
 }

@@ -19,7 +19,7 @@ export function videoRank(s: ReleaseSpec): number {
   let r = 0;
   if (dv) {
     if (v.dvProfile === 5) r = 0.5;                                  // P5 без фоллбэка — хуже SDR для direct play
-    else if (v.dvProfile === 7) r = v.dvLayer === 'FEL' ? 6 : 5;     // P7: FEL > MEL (неизвестный слой = MEL)
+    else if (v.dvProfile === 7) r = v.dvLayer === 'FEL' ? 6 : v.dvLayer === 'MEL' ? 5 : 5.5;   // P7: FEL > MEL; слой неизвестен — см. videoCmp
     else r = 4;                                                       // P8 и прочие
     if (v.hdr.includes('hdr10plus')) r += 0.5;
   } else if (v.hdr.includes('hdr10plus')) r = 3;
@@ -43,7 +43,7 @@ function bestDub(s: ReleaseSpec) {
   const dubs = s.audio.filter(a => a.lang === 'rus' && a.kind === 'dub');
   if (!dubs.length) return { r: 0, label: 'нет' };
   const b = dubs.reduce((x, y) => (codecRank(y) > codecRank(x) ? y : x));
-  return { r: codecRank(b), label: `${b.codec ?? '?'} ${b.channels ?? '?'}ch${b.author ? ' (' + b.author + ')' : ''}` };
+  return { r: dubRank(b), label: `${b.codec ?? '?'} ${b.channels ?? '?'}ch${b.author ? ' (' + b.author + ')' : ''}` };
 }
 function bestOriginal(s: ReleaseSpec) {
   const o = s.audio.filter(a => a.kind === 'original' || (a.lang !== 'rus' && a.lang !== 'ukr' && a.kind === 'unknown'));
@@ -78,7 +78,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   // 2) измерения
   const prio = rules.trackers?.priority ?? ['TeamHD', 'Tapochek'];
   const all: Record<string, Dim> = {
-    video: { dim: 'видео', current: videoLabel(current), candidate: videoLabel(cand), cmp: cmp(videoRank(current), videoRank(cand)) },
+    video: { dim: 'видео', current: videoLabel(current), candidate: videoLabel(cand), cmp: videoCmp(current, cand) },
     russian_dub: { dim: 'русский дубляж', current: curDub.label, candidate: candDub.label, cmp: cmp(curDub.r, candDub.r) },
     original_audio: { dim: 'оригинал', current: bestOriginal(current).label, candidate: bestOriginal(cand).label, cmp: cmp(bestOriginal(current).r, bestOriginal(cand).r) },
     subtitles: { dim: 'рус. субтитры', current: rusSubs(current) ? 'есть' : 'нет', candidate: rusSubs(cand) ? 'есть' : 'нет', cmp: cmp(rusSubs(current), rusSubs(cand)) },
@@ -87,6 +87,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   const order = rules.compare_order ?? ['video', 'russian_dub', 'original_audio', 'subtitles', 'tracker'];
   const dims = order.filter(k => all[k]).map(k => all[k]);
 
+  if (current.uniqueId && current.uniqueId === cand.uniqueId) return { verdict: 'KEEP', reasons: ['это тот же релиз, что уже лежит в библиотеке'], dims };
   if (reasons.length) return { verdict: 'REJECT', reasons, dims };
 
   // разрешение должно совпадать — иначе это грубый шаг (дело Radarr)
@@ -114,3 +115,14 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
     return { verdict: 'REVIEW', reasons: [win, ...flags, ...losses.map(l => 'потеря — ' + l)], dims };
   return { verdict: 'UPGRADE', reasons: [win], dims };
 }
+
+/** Сравнение видео: если у обоих P7 и хотя бы у одного слой неизвестен — слой не сравниваем. */
+export function videoCmp(a: ReleaseSpec, b: ReleaseSpec): -1 | 0 | 1 {
+  const p7 = (s: ReleaseSpec) => s.video.hdr.includes('dv') && s.video.dvProfile === 7;
+  if (p7(a) && p7(b) && (!a.video.dvLayer || !b.video.dvLayer)) {
+    const plus = (s: ReleaseSpec) => (s.video.hdr.includes('hdr10plus') ? 1 : 0);
+    return cmp(plus(a), plus(b));
+  }
+  return cmp(videoRank(a), videoRank(b));
+}
+const dubRank = (a: { codec?: string; lossless?: boolean }) => (a.lossless ? 2 : 1);   // для дубляжа важно только наличие и lossless
