@@ -69,3 +69,17 @@ test('дубляж EAC3 -> AC3 не считается потерей', () => {
   const cur = thd(); cur.audio[0].codec = 'EAC3';
   assert.equal(judge(cur, rt(), rules, {}).verdict, 'UPGRADE');
 });
+
+test('RuTor без языков в MediaInfo: дорожки из сводки, дубляж найден', async () => {
+  const { fillFromSummary } = await import('../spec/fromMediainfo.js');
+  const { audioSummary } = await import('../spec/descFlags.js');
+  const cand = rt(); cand.uniqueId = 'x'; cand.audio = [];
+  fillFromSummary(cand, audioSummary('Аудио 1: Русский 48 kHz, AC3, 6 ch 448 Kbps - Дубляж\nАудио 2: Русский 48 kHz, DTS, 6ch, 755 Kbps - Профессиональный двухголосый (Нордиск)\nАудио 6: Английский 48 kHz, DTS-X MA, 8ch, 3689 Kbps - Оригинал'));
+  assert.deepEqual(cand.audio.map(a => `${a.lang}/${a.kind}`), ['rus/dub', 'rus/dvo', 'eng/original']);
+  assert.notEqual(judge(thd(), cand, rules, {}).verdict, 'REJECT');
+});
+
+test('дорожки не распознаны -> не REJECT', () => {
+  const cand = rt(); cand.uniqueId = 'x'; cand.audio = [{ lang: 'und', kind: 'unknown' } as any];
+  assert.equal(judge(thd(), cand, rules, {}).verdict, 'KEEP');
+});

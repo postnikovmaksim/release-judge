@@ -79,3 +79,31 @@ export function enrichAudio(spec: ReleaseSpec, hints: Map<number, string>) {
     if (!a.title || a.title.length < 5) a.title = h;
   });
 }
+
+const LANG_WORD = /^(русский|russian|английский|english|украинский|ukrainian|японский|japanese|казахский|kazakh|французский|french|немецкий|german)/i;
+function codecFromText(s: string) {
+  return /truehd/i.test(s) ? 'TrueHD' : /DTS[- ]?(HD|X)\s*MA|DTS-X/i.test(s) ? 'DTS-HD MA' : /E-?AC-?3|DD\+/i.test(s) ? 'EAC3'
+    : /\bAC-?3\b|\bDD\b/i.test(s) ? 'AC3' : /\bDTS\b/i.test(s) ? 'DTS' : /FLAC/i.test(s) ? 'FLAC' : /Opus/i.test(s) ? 'Opus' : /AAC/i.test(s) ? 'AAC' : undefined;
+}
+
+/**
+ * Если в дампе у дорожек нет языка (или дорожек меньше, чем в сводке) — достраиваем из строк «Аудио N: Русский … - Дубляж».
+ */
+export function fillFromSummary(spec: ReleaseSpec, summary: Map<number, { line: string; hint?: string }>) {
+  for (const [n, { line, hint }] of summary) {
+    const lw = line.replace(/^[\s|:]+/, '').match(LANG_WORD)?.[1];
+    const lang = lw ? normLang(lw) : undefined;
+    const kind = hint ? classifyAudio(hint, lang ?? 'und') : 'unknown';
+    const tr = spec.audio[n - 1];
+    if (tr) {
+      if (tr.lang === 'und' && lang) tr.lang = lang;
+      if (tr.kind === 'unknown' && kind !== 'unknown') tr.kind = kind;
+    } else if (lang) {
+      const codec = codecFromText(line);
+      spec.audio.push({ lang, kind: kind === 'unknown' && /оригинал|original/i.test(hint ?? '') ? 'original' : kind,
+        codec, lossless: /TrueHD|DTS-HD MA|FLAC|PCM/.test(codec ?? ''), atmos: /atmos/i.test(line),
+        channels: Number(line.match(/(\d)\s*ch\b|(\d)\.\d/i)?.slice(1).find(Boolean)) || undefined,
+        author: ['dub', 'mvo', 'dvo', 'avo', 'vo'].includes(kind) ? extractAuthor(hint) : undefined, title: hint });
+    }
+  }
+}

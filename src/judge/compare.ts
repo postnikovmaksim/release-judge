@@ -73,7 +73,8 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
     reasons.push('DV Profile 5 без HDR10-фоллбэка (не будет direct play)');
   if (hr.upscale !== false && cand.video.upscale) reasons.push('апскейл');
   const curDub = bestDub(current), candDub = bestDub(cand);
-  if (hr.lose_russian_dub !== false && curDub.r > 0 && candDub.r === 0) reasons.push('нет русского дубляжа, а в текущем файле он есть');
+  const candKnown = cand.audio.some(a => a.lang !== 'und');
+  if (hr.lose_russian_dub !== false && curDub.r > 0 && candDub.r === 0 && candKnown) reasons.push('нет русского дубляжа, а в текущем файле он есть');
 
   // 2) измерения
   const prio = rules.trackers?.priority ?? ['TeamHD', 'Tapochek'];
@@ -89,6 +90,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
 
   if (current.uniqueId && current.uniqueId === cand.uniqueId) return { verdict: 'KEEP', reasons: ['это тот же релиз, что уже лежит в библиотеке'], dims };
   if (reasons.length) return { verdict: 'REJECT', reasons, dims };
+  if (!candKnown) return { verdict: 'KEEP', reasons: ['не удалось определить аудиодорожки раздачи'], dims };
 
   // разрешение должно совпадать — иначе это грубый шаг (дело Radarr)
   const is4k = (s: ReleaseSpec) => (s.video.width ?? 0) >= 3200 || (s.video.height ?? 0) >= 2000;
