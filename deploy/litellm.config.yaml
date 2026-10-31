@@ -1,7 +1,8 @@
 # Модели и ключи провайдеров хранятся в Postgres (STORE_MODEL_IN_DB) и управляются через UI: http://<unraid>:4000/ui
 # Public Model Name = "extract" у всех моделей для release-judge — роутер балансирует между ними
 # и на 429 уводит модель в cooldown, переключаясь на следующую.
-# Текущие (2026-10-31): mistral/mistral-small-latest (rpm 50, tpm 400k), groq/openai/gpt-oss-120b (rpm 25, tpm 7k, reasoning_effort=low)
+# Текущие (2026-10-31): groq/openai/gpt-oss-120b (rpm 25, tpm 7k, reasoning_effort=low), groq/qwen/qwen3.8-27b (rpm 25, tpm 5k).
+# Mistral убран: бесплатный API-план (Experiment) больше не выдаётся.
 model_list: []
 
 router_settings:
