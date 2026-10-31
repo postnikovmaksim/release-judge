@@ -70,3 +70,14 @@ test('RuTor: MediaInfo из textarea с <br />', () => {
   assert.equal(s.video.height, 2160);
   assert.ok(s.audio.some(a => a.codec === 'DTS-HD MA' && a.lossless));
 });
+
+test('дубляж из названия раздачи, если дорожка подписана только студией', async () => {
+  const { titleClaimsDub } = await import('./descFlags.js');
+  const { applyTitleDub } = await import('./fromMediainfo.js');
+  assert.ok(titleClaimsDub('Hercules [1997, BDRemux 1080p] Dub + 2x MVO + 4 AVO + Original Eng'));
+  assert.ok(titleClaimsDub('Русалочка (1989) UHD BDRemux 2160p | 4K | HDR | D, P2, A'));
+  assert.ok(!titleClaimsDub('Fake (2020) UHD BDRemux 2160p | 4K | HDR | Dolby Vision | P, A'));
+  const s: any = { audio: [{ lang: 'rus', kind: 'unknown', title: '|Невафильм_1998г|' }, { lang: 'rus', kind: 'mvo' }] };
+  applyTitleDub(s, true);
+  assert.equal(s.audio[0].kind, 'dub');
+});

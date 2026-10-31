@@ -3,8 +3,8 @@ import { db } from './db.js';
 import { fetchPage } from './trackers/fetchPage.js';
 import { extract } from './trackers/extract.js';
 import { parseMediainfoText } from './spec/mediainfoText.js';
-import { specFromMediainfo, enrichAudio, fillFromSummary } from './spec/fromMediainfo.js';
-import { descFlags, audioHints, audioSummary } from './spec/descFlags.js';
+import { specFromMediainfo, enrichAudio, fillFromSummary, applyTitleDub } from './spec/fromMediainfo.js';
+import { descFlags, audioHints, audioSummary, titleClaimsDub } from './spec/descFlags.js';
 import type { ReleaseSpec } from './spec/schema.js';
 
 export interface TopicResult { url: string; tracker: string; title: string; parser: 'mediainfo' | 'none'; spec?: ReleaseSpec; flags: ReturnType<typeof descFlags>; cached: boolean; }
@@ -31,6 +31,7 @@ export async function parseTopic(url: string, opts: { force?: boolean } = {}): P
     if (flags.dvLayer && spec.video.hdr.includes('dv')) spec.video.dvLayer = flags.dvLayer;
     enrichAudio(spec, audioHints(ex.description));
     fillFromSummary(spec, audioSummary(ex.description));
+    applyTitleDub(spec, titleClaimsDub(ex.title));
     spec.tracker = tracker; spec.topicUrl = url;
   }
   const result: TopicResult = { url, tracker, title: ex.title, parser: spec ? 'mediainfo' : 'none', spec, flags, cached: false };

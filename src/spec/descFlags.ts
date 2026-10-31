@@ -38,3 +38,7 @@ export function audioHints(desc: string): Map<number, string> {
   return m;
 }
 
+
+/** Заявлен ли дубляж в названии раздачи: «Dub + 2x MVO», «Дубляж», RuTor «| D, P2, A». */
+export const titleClaimsDub = (title: string) =>
+  /\bDub\b|дубляж|дублир|[|,]\s*D\s*(?:[,|]|$)/i.test(title);

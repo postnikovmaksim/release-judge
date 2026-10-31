@@ -107,3 +107,10 @@ export function fillFromSummary(spec: ReleaseSpec, summary: Map<number, { line: 
     }
   }
 }
+
+/** Название раздачи заявляет дубляж, а по дорожкам его не видно (подписаны только студией) — первая русская «unknown» = дубляж. */
+export function applyTitleDub(spec: ReleaseSpec, claims: boolean) {
+  if (!claims || spec.audio.some(a => a.lang === 'rus' && a.kind === 'dub')) return;
+  const t = spec.audio.find(a => a.lang === 'rus' && a.kind === 'unknown');
+  if (t) { t.kind = 'dub'; t.author = t.author ?? extractAuthor(t.title?.replace(/[|]/g, '')); }
+}
