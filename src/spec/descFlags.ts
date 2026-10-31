@@ -22,7 +22,8 @@ export function audioHints(desc: string): Map<number, string> {
     const a = line.match(/^\s*(?:Аудио|Audio)\s*#?\s*(\d+)\s*:(.*)$/i);
     if (!a) continue;
     const rest = a[2];
-    const hint = rest.match(/\|([^|]+)\|/)?.[1] ?? (rest.includes(' / ') ? rest.slice(rest.lastIndexOf(' / ') + 3) : undefined);
+    const pipes = rest.split('|').map(s => s.trim()).filter(Boolean);
+    const hint = rest.includes('|') ? pipes[pipes.length - 1] : (rest.includes(' / ') ? rest.slice(rest.lastIndexOf(' / ') + 3) : undefined);
     if (hint?.trim()) m.set(+a[1], hint.trim());
   }
   return m;

@@ -41,3 +41,17 @@ test('RuTracker summary hints', () => {
   assert.equal(h.get(1), 'Dub Пифагор');
   assert.equal(h.get(3), 'AVO Юрий Немахов');
 });
+
+test('Tapochek Avatar 3: no General header, DV P7 + HDR10+ + HDR10, summary with pipes', () => {
+  const t = fx('avatar3-tapochek.mediainfo.txt');
+  assert.ok(looksLikeMediainfo(t));
+  const s = specFromMediainfo(parseMediainfoText(t));
+  assert.deepEqual([...s.video.hdr].sort(), ['dv', 'hdr10', 'hdr10plus']);
+  assert.equal(s.video.dvProfile, 7);
+  const hints = audioHints(' Аудио #8: | AC3 / 5.1 / 48 kHz / 640 kbps | MVO, Дубляжная \n Аудио #11: | Dolby TrueHD/Atmos Audio / 7.1+13 objects | Original ');
+  assert.equal(hints.get(8), 'MVO, Дубляжная');
+  enrichAudio(s, hints);
+  assert.equal(s.audio[7].kind, 'mvo');
+  assert.equal(s.audio[10].kind, 'original');
+  assert.equal(s.audio[10].author, undefined);
+});

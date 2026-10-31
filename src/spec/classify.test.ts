@@ -30,3 +30,11 @@ test('bare author names are AVO', () => {
   assert.equal(classifyAudio('|Гаврилов, Андрей Юрьевич|', 'rus', 'eng'), 'avo');
   assert.equal(classifyAudio('Reanimedia 2.0', 'rus', 'jpn'), 'unknown');
 });
+
+test('explicit leading code wins over words in studio name', () => {
+  assert.equal(classifyAudio('MVO, Дубляжная', 'rus', 'eng'), 'mvo');
+  assert.equal(classifyAudio('Dub, MovieDalen', 'rus', 'eng'), 'dub');
+  assert.equal(classifyAudio('| AVO Гоблин', 'rus', 'eng'), 'avo');
+  assert.equal(classifyAudio('Дубляж Пифагор', 'rus', 'eng'), 'dub');
+  assert.equal(classifyAudio('Vox Mediaworks', 'rus', 'eng'), 'unknown');
+});

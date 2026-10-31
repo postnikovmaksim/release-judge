@@ -1,0 +1,619 @@
+Код: 
+ Unique ID : 40664015971346251472003579291467669303 (0x1E979AC72F6C4AFF6EA140EFF5BA5F37) 
+ Complete name : H:\UHD\Аватар Пламя и пепел.2025.UHD.Blu-Ray.Remux.2160p.[by arxivariys].mkv 
+ Format : Matroska 
+ Format version : Version 4 
+ File size : 80.3 GiB 
+ Duration : 3 h 17 min 
+ Overall bit rate mode : Variable 
+ Overall bit rate : 58.3 Mb/s 
+ Frame rate : 23.976 FPS 
+ Title : Release by arxivariys 
+ Encoded date : 2026-08-23 12:05:52 UTC 
+ Writing application : mkvmerge 100.0 ('Do Hot Girls Like Chords') 64-bit 
+ Writing library : libebml v1.4.5 + libmatroska v1.7.1 
+ Attachments : poster.jpg 
+ Video 
+ ID : 1 
+ Format : HEVC 
+ Format/Info : High Efficiency Video Coding 
+ Format profile : Main 10@L5.1@High 
+ HDR format : Dolby Vision, Version 1.0, Profile 7.6, dvhe.07.06, BL+EL+RPU, no metadata compression, Blu-ray compatible / SMPTE ST 2094 App 4, Version HDR10+ Profile A, HDR10+ Profile A compatible 
+ Codec ID : V_MPEGH/ISO/HEVC 
+ Duration : 3 h 17 min 
+ Bit rate : 47.8 Mb/s 
+ Width : 3 840 pixels 
+ Height : 2 160 pixels 
+ Display aspect ratio : 16:9 
+ Frame rate mode : Constant 
+ Frame rate : 23.976 (24000/1001) FPS 
+ Color space : YUV 
+ Chroma subsampling : 4:2:0 (Type 2) 
+ Bit depth : 10 bits 
+ Bits/(Pixel*Frame) : 0.240 
+ Stream size : 65.9 GiB (82%) 
+ Title : Release by arxivariys 
+ Language : English 
+ Default : Yes 
+ Forced : No 
+ Color range : Limited 
+ Color primaries : BT.2020 
+ Transfer characteristics : PQ 
+ Matrix coefficients : BT.2020 non-constant 
+ Mastering display color primaries : BT.2020 
+ Mastering display luminance : min: 0.0001 cd/m2, max: 1000 cd/m2 
+ Maximum Content Light Level : 230 cd/m2 
+ Maximum Frame-Average Light Level : 197 cd/m2 
+ Audio #1 
+ ID : 2 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 448 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 632 MiB (1%) 
+ Title : Dub, MovieDalen 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : Yes 
+ Forced : No 
+ Dialog Normalization : -26 dB 
+ compr : -0.28 dB 
+ Center mix level (cmixlev) : -3.0 dB 
+ Surround mix level (surmixlev) : -3 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -26 dB 
+ Dialogue normalization, minimum : -26 dB 
+ Dialogue normalization, maximum : -26 dB 
+ Audio #2 
+ ID : 3 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 384 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 542 MiB (1%) 
+ Title : Dub, WinMedia 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -31 dB 
+ compr : -0.28 dB 
+ Center mix level (cmixlev) : -3.0 dB 
+ Surround mix level (surmixlev) : -3 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -31 dB 
+ Dialogue normalization, minimum : -31 dB 
+ Dialogue normalization, maximum : -31 dB 
+ Audio #3 
+ ID : 4 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 640 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 903 MiB (1%) 
+ Title : Dub, Jaskier 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -26 dB 
+ compr : -0.28 dB 
+ Center mix level (cmixlev) : -3.0 dB 
+ Surround mix level (surmixlev) : -3 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -26 dB 
+ Dialogue normalization, minimum : -26 dB 
+ Dialogue normalization, maximum : -26 dB 
+ Audio #4 
+ ID : 5 
+ Format : E-AC-3 
+ Format/Info : Enhanced AC-3 
+ Commercial name : Dolby Digital Plus 
+ Codec ID : A_EAC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 768 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 1.06 GiB (1%) 
+ Title : MVO, Jaskier 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -24 dB 
+ compr : -0.28 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -24 dB 
+ Dialogue normalization, minimum : -24 dB 
+ Dialogue normalization, maximum : -24 dB 
+ Audio #5 
+ ID : 6 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 384 kb/s 
+ Channel(s) : 2 channels 
+ Channel layout : L R 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 542 MiB (1%) 
+ Title : MVO, LostFilm 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -19 dB 
+ compr : -0.28 dB 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -19 dB 
+ Dialogue normalization, minimum : -19 dB 
+ Dialogue normalization, maximum : -19 dB 
+ Audio #6 
+ ID : 7 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 384 kb/s 
+ Channel(s) : 2 channels 
+ Channel layout : L R 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 542 MiB (1%) 
+ Title : MVO, HDRezka Studio 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -20 dB 
+ compr : -0.28 dB 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -20 dB 
+ Dialogue normalization, minimum : -20 dB 
+ Dialogue normalization, maximum : -20 dB 
+ Audio #7 
+ ID : 8 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 192 kb/s 
+ Channel(s) : 2 channels 
+ Channel layout : L R 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 271 MiB (0%) 
+ Title : MVO, Red Head Sound 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -24 dB 
+ compr : -0.28 dB 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -24 dB 
+ Dialogue normalization, minimum : -24 dB 
+ Dialogue normalization, maximum : -24 dB 
+ Audio #8 
+ ID : 9 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 640 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 903 MiB (1%) 
+ Title : MVO, Дубляжная 
+ Language : Russian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -20 dB 
+ compr : -0.28 dB 
+ Center mix level (cmixlev) : -3.0 dB 
+ Surround mix level (surmixlev) : -3 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -20 dB 
+ Dialogue normalization, minimum : -20 dB 
+ Dialogue normalization, maximum : -20 dB 
+ Audio #9 
+ ID : 10 
+ Format : E-AC-3 
+ Format/Info : Enhanced AC-3 
+ Commercial name : Dolby Digital Plus 
+ Format settings : Dolby Surround EX 
+ Codec ID : A_EAC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 640 kb/s 
+ Channel(s) : 8 channels 
+ Channel layout : L R C LFE Ls Rs Lb Rb 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 903 MiB (1%) 
+ Title : Dub, Postmodern 
+ Language : Ukrainian 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -27 dB 
+ compr : -0.28 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -27 dB 
+ Dialogue normalization, minimum : -27 dB 
+ Dialogue normalization, maximum : -27 dB 
+ Audio #10 
+ ID : 11 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 448 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 632 MiB (1%) 
+ Title : Dub, MovieDalen 
+ Language : Kazakh 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -28 dB 
+ compr : -0.28 dB 
+ Center mix level (cmixlev) : -3.0 dB 
+ Surround mix level (surmixlev) : -3 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -3.0 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -3.0 dB 
+ Dialogue normalization, average : -28 dB 
+ Dialogue normalization, minimum : -28 dB 
+ Dialogue normalization, maximum : -28 dB 
+ Audio #11 
+ ID : 12 
+ Format : MLP FBA 16-ch 
+ Format/Info : Meridian Lossless Packing FBA with 16-channel presentation 
+ Commercial name : Dolby TrueHD with Dolby Atmos 
+ Codec ID : A_TRUEHD 
+ Duration : 3 h 17 min 
+ Bit rate mode : Variable 
+ Bit rate : 4 820 kb/s 
+ Maximum bit rate : 7 767 kb/s 
+ Channel(s) : 8 channels 
+ Channel layout : L R C LFE Ls Rs Lb Rb 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 1 200.000 FPS (40 SPF) 
+ Compression mode : Lossless 
+ Stream size : 6.64 GiB (8%) 
+ Language : English 
+ Default : No 
+ Forced : No 
+ Number of dynamic objects : 13 
+ Bed channel count : 1 channel 
+ Bed channel configuration : LFE 
+ Audio #12 
+ ID : 13 
+ Format : AC-3 
+ Format/Info : Audio Coding 3 
+ Commercial name : Dolby Digital 
+ Codec ID : A_AC3 
+ Duration : 3 h 17 min 
+ Bit rate mode : Constant 
+ Bit rate : 640 kb/s 
+ Channel(s) : 6 channels 
+ Channel layout : L R C LFE Ls Rs 
+ Sampling rate : 48.0 kHz 
+ Frame rate : 31.250 FPS (1536 SPF) 
+ Compression mode : Lossy 
+ Stream size : 903 MiB (1%) 
+ Language : English 
+ Service kind : Complete Main 
+ Default : No 
+ Forced : No 
+ Dialog Normalization : -27 dB 
+ compr : -0.28 dB 
+ Center mix level (cmixlev) : -3.0 dB 
+ Surround mix level (surmixlev) : -6 dB 
+ dmixmod : Lo/Ro 
+ ltrtcmixlev : -3.0 dB 
+ ltrtsurmixlev : -4.5 dB 
+ lorocmixlev : -3.0 dB 
+ lorosurmixlev : -4.5 dB 
+ Dialogue normalization, average : -27 dB 
+ Dialogue normalization, minimum : -27 dB 
+ Dialogue normalization, maximum : -27 dB 
+ Text #1 
+ ID : 14 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 1 min 
+ Bit rate : 1 b/s 
+ Frame rate : 0.004 FPS 
+ Count of elements : 44 
+ Stream size : 2.12 KiB (0%) 
+ Title : forced 
+ Language : Russian 
+ Default : Yes 
+ Forced : No 
+ Text #2 
+ ID : 15 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 16 min 
+ Bit rate : 61 b/s 
+ Frame rate : 0.212 FPS 
+ Count of elements : 2494 
+ Stream size : 89.2 KiB (0%) 
+ Title : full / iTunes 
+ Language : Russian 
+ Default : No 
+ Forced : No 
+ Text #3 
+ ID : 16 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 10 min 
+ Bit rate : 52 b/s 
+ Frame rate : 0.220 FPS 
+ Count of elements : 2509 
+ Stream size : 72.9 KiB (0%) 
+ Title : full / HDRezka Studio 
+ Language : Russian 
+ Default : No 
+ Forced : No 
+ Text #4 
+ ID : 17 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 2 h 57 min 
+ Bit rate : 1 b/s 
+ Frame rate : 0.004 FPS 
+ Count of elements : 40 
+ Stream size : 1.78 KiB (0%) 
+ Title : forced 
+ Language : Ukrainian 
+ Default : No 
+ Forced : No 
+ Text #5 
+ ID : 18 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 16 min 
+ Bit rate : 58 b/s 
+ Frame rate : 0.212 FPS 
+ Count of elements : 2496 
+ Stream size : 83.6 KiB (0%) 
+ Title : full 
+ Language : Ukrainian 
+ Default : No 
+ Forced : No 
+ Text #6 
+ ID : 19 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 8 min 
+ Bit rate : 79 b/s 
+ Frame rate : 0.284 FPS 
+ Count of elements : 3207 
+ Stream size : 110 KiB (0%) 
+ Title : SDH 
+ Language : Ukrainian 
+ Default : No 
+ Forced : No 
+ Text #7 
+ ID : 20 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 2 min 
+ Bit rate : 1 b/s 
+ Frame rate : 0.004 FPS 
+ Count of elements : 40 
+ Stream size : 1.86 KiB (0%) 
+ Title : forced 
+ Language : Kazakh 
+ Default : No 
+ Forced : No 
+ Text #8 
+ ID : 21 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 16 min 
+ Bit rate : 36 b/s 
+ Frame rate : 0.209 FPS 
+ Count of elements : 2465 
+ Stream size : 52.2 KiB (0%) 
+ Title : full 
+ Language : English (US) 
+ Default : No 
+ Forced : No 
+ Text #9 
+ ID : 22 
+ Format : UTF-8 
+ Codec ID : S_TEXT/UTF8 
+ Codec ID/Info : UTF-8 Plain Text 
+ Duration : 3 h 10 min 
+ Bit rate : 50 b/s 
+ Frame rate : 0.291 FPS 
+ Count of elements : 3322 
+ Stream size : 70.4 KiB (0%) 
+ Title : SDH 
+ Language : English (US) 
+ Service kind : Hearing Impaired 
+ Default : No 
+ Forced : No 
+ Text #10 
+ ID : 23 
+ Format : PGS 
+ Muxing mode : zlib 
+ Codec ID : S_HDMV/PGS 
+ Codec ID/Info : Picture based subtitle format used on BDs/HD-DVDs 
+ Duration : 3 h 10 min 
+ Bit rate : 36.6 kb/s 
+ Frame rate : 0.581 FPS 
+ Count of elements : 6634 
+ Stream size : 49.9 MiB (0%) 
+ Title : SDH / PGS 
+ Language : English (US) 
+ Service kind : Hearing Impaired 
+ Default : No 
+ Forced : No 
+ Image 
+ Title : poster.jpg 
+ Format : JPEG 
+ Muxing mode : Attachment 
+ Width : 400 pixels 
+ Height : 500 pixels 
+ Color space : YUV 
+ Chroma subsampling : 4:4:4 
+ Bit depth : 8 bits 
+ Compression mode : Lossy 
+ Stream size : 135 KiB (0%) 
+ Menu 
+ 00:00:00.000 : en:Chapter 01 
+ 00:04:15.672 : en:Chapter 02 
+ 00:08:46.401 : en:Chapter 03 
+ 00:09:55.386 : en:Chapter 04 
+ 00:12:40.093 : en:Chapter 05 
+ 00:15:27.009 : en:Chapter 06 
+ 00:20:03.369 : en:Chapter 07 
+ 00:24:02.983 : en:Chapter 08 
+ 00:31:24.132 : en:Chapter 09 
+ 00:33:42.604 : en:Chapter 10 
+ 00:35:16.781 : en:Chapter 11 
+ 00:37:16.943 : en:Chapter 12 
+ 00:39:12.517 : en:Chapter 13 
+ 00:44:02.265 : en:Chapter 14 
+ 00:48:04.381 : en:Chapter 15 
+ 00:51:24.456 : en:Chapter 16 
+ 00:51:51.066 : en:Chapter 17 
+ 00:54:42.529 : en:Chapter 18 
+ 00:58:25.961 : en:Chapter 19 
+ 01:01:46.995 : en:Chapter 20 
+ 01:06:52.717 : en:Chapter 21 
+ 01:07:58.825 : en:Chapter 22 
+ 01:09:51.437 : en:Chapter 23 
+ 01:13:22.606 : en:Chapter 24 
+ 01:16:19.325 : en:Chapter 25 
+ 01:19:03.322 : en:Chapter 26 
+ 01:29:57.058 : en:Chapter 27 
+ 01:34:20.905 : en:Chapter 28 
+ 01:36:07.428 : en:Chapter 29 
+ 01:37:35.099 : en:Chapter 30 
+ 01:44:02.736 : en:Chapter 31 
+ 01:48:00.974 : en:Chapter 32 
+ 01:50:51.645 : en:Chapter 33 
+ 01:54:11.887 : en:Chapter 34 
+ 01:55:06.900 : en:Chapter 35 
+ 01:58:38.570 : en:Chapter 36 
+ 02:04:19.702 : en:Chapter 37 
+ 02:10:13.097 : en:Chapter 38 
+ 02:17:02.255 : en:Chapter 39 
+ 02:20:16.867 : en:Chapter 40 
+ 02:24:55.145 : en:Chapter 41 
+ 02:25:59.042 : en:Chapter 42 
+ 02:27:52.155 : en:Chapter 43 
+ 02:34:40.729 : en:Chapter 44 
+ 02:36:37.179 : en:Chapter 45 
+ 02:40:08.724 : en:Chapter 46 
+ 02:42:48.508 : en:Chapter 47 
+ 02:46:04.621 : en:Chapter 48 
+ 02:47:15.108 : en:Chapter 49 
+ 02:48:52.956 : en:Chapter 50 
+ 02:51:47.630 : en:Chapter 51 
+ 02:52:36.262 : en:Chapter 52 
+ 02:53:51.754 : en:Chapter 53 
+ 02:58:43.754 : en:Chapter 54 
+ 03:04:53.624 : en:Chapter 55 
+ 03:06:11.869 : en:Chapter 56 
+ 03:07:57.141 : en:End Credits

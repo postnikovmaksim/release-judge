@@ -17,6 +17,8 @@ const RULES: [AudioKind, RegExp][] = [
 ];
 
 export function classifyAudio(title: string | undefined, lang: string, originalLang?: string): AudioKind {
+  const lead = (title ?? '').replace(/^[\s|,.:;\/-]+/, '').match(/^(dub|mvo|dvo|avo|vo)(?![a-zа-яё])/i)?.[1].toLowerCase();
+  if (lead) return lead as AudioKind;
   const t = title ?? '';
   for (const [kind, re] of RULES) if (re.test(t)) return kind;
   if (originalLang && lang === originalLang && lang !== 'rus') return 'original';

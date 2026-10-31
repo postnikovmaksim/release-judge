@@ -73,7 +73,7 @@ export function enrichAudio(spec: ReleaseSpec, hints: Map<number, string>) {
     if (!h) return;
     const kind = classifyAudio(h, a.lang);
     if (a.kind === 'unknown' || (kind !== 'unknown' && kind !== a.kind && a.kind !== 'commentary')) a.kind = kind;
-    if (!a.author) a.author = extractAuthor(h);
+    if (!a.author && ['dub', 'mvo', 'dvo', 'avo', 'vo'].includes(a.kind)) a.author = extractAuthor(h);
     if (!a.title || a.title.length < 5) a.title = h;
   });
 }

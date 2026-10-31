@@ -38,7 +38,8 @@ export function parseMediainfoText(text: string): Track[] {
     const s = line.match(SECTION);
     if (s) { cur = { '@type': s[1][0].toUpperCase() + s[1].slice(1).toLowerCase() }; tracks.push(cur); continue; }
     const kv = line.match(KV);
-    if (!kv || !cur) continue;
+    if (!kv) continue;
+    if (!cur) { cur = { '@type': 'General' }; tracks.push(cur); }   // дамп без заголовка General (Tapochek)
     const key = KEYMAP[kv[1].trim().toLowerCase()];
     if (!key || cur[key] !== undefined) continue;          // первое значение (BitRate vs BitRate maximum и т.п.)
     let v = kv[2].trim();
@@ -62,4 +63,5 @@ export function parseMediainfoText(text: string): Track[] {
 }
 
 /** Есть ли в тексте похоже на MediaInfo-дамп (а не краткую сводку). */
-export const looksLikeMediainfo = (t: string) => /^\s*General\s*$/m.test(t) && /^\s*(Video|Audio)(\s*#\s*\d+)?\s*$/m.test(t);
+export const looksLikeMediainfo = (t: string) =>
+  /^\s*Video(\s*#\s*\d+)?\s*$/m.test(t) && /^\s*Audio(\s*#\s*\d+)?\s*$/m.test(t) && /^\s*Format\s+:/m.test(t);

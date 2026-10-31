@@ -15,7 +15,7 @@ export const TRACKERS: TrackerDef[] = [
   { id: 'RuTracker', hosts: /(^|\.)rutracker\.(org|net|nl)$/i, prowlarrName: /^RuTracker/i, cookieFrom: 'status', flaresolverr: true,
     mainPost: '.post_body:first', mediainfo: '.sp-wrap:has(.sp-head:contains("MediaInfo")) .sp-body pre' },
   { id: 'Tapochek', hosts: /(^|\.)tapochek\.net$/i, prowlarrName: /^Tapochek/i, cookieFrom: 'status', flaresolverr: false,
-    mainPost: '.post_body:first, .post-body:first' },
+    mainPost: '.post_body:first, .post-body:first', mediainfo: '.sp-body[title="MediaInfo"] pre' },
   { id: 'Kinozal', hosts: /(^|\.)kinozal\.(tv|me|guru)$/i, prowlarrName: /^Kinozal/i, cookieFrom: 'status', flaresolverr: false,
     mainPost: '.mn1_content, .content' },
   { id: 'NNM', hosts: /(^|\.)nnmclub\.(to|me)$/i, prowlarrName: /^NoNaMe/i, cookieFrom: 'status', flaresolverr: true,
