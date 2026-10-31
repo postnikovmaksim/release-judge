@@ -17,6 +17,16 @@ export const config = {
   prowlarr: { url: env('PROWLARR_URL', 'http://prowlarr:9696'), apiKey: env('PROWLARR_API_KEY', ''), db: env('PROWLARR_DB', '/prowlarr/prowlarr.db') },
   flaresolverr: { url: env('FLARESOLVERR_URL', 'http://flaresolverr:8191') },
   hardlinks: { url: env('HARDLINKS_URL', 'http://media-hardlinks:3000') },
+  telegram: { token: env('TELEGRAM_BOT_TOKEN', ''), chatId: env('TELEGRAM_CHAT_ID', '') },
+  discovery: {
+    at: env('DISCOVERY_AT', '02:30'),                       // локальное время ночного прогона (TZ контейнера)
+    limit: Number(env('DISCOVERY_LIMIT', '30')),            // фильмов за прогон
+    excludeIndexerIds: env('EXCLUDE_INDEXER_IDS', '16,17,18,19,20,21,22').split(',').map(Number),
+    delayMs: Number(env('DISCOVERY_DELAY_MS', '4000')),
+    maxCandidatesPerMovie: Number(env('DISCOVERY_MAX_CANDIDATES', '5')),
+    recheckDays: Number(env('DISCOVERY_RECHECK_DAYS', '14')),
+  },
+  tz: env('TZ', 'Europe/Moscow'),
   llm: {
     baseURL: env('LLM_BASE_URL', 'http://litellm:4000/v1'),
     apiKey: env('LLM_API_KEY', ''),

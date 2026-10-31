@@ -1,8 +1,8 @@
 # Compose Manager project "automation" на Unraid. Данные: /mnt/user/appdata/automation/{release-judge,litellm}
-# Секреты — в .env рядом (не в git): RADARR_API_KEY, PROWLARR_API_KEY, LITELLM_MASTER_KEY, LITELLM_UI_PASSWORD, LITELLM_DB_PASSWORD
+# Секреты — в .env рядом (не в git): RADARR_API_KEY, PROWLARR_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, LITELLM_MASTER_KEY, LITELLM_UI_PASSWORD, LITELLM_DB_PASSWORD
 services:
   release-judge:
-    image: postnikovm/release-judge:0.3      # пиним minor; latest — только для теста
+    image: postnikovm/release-judge:0.4      # пиним minor; latest — только для теста
     container_name: release-judge
     restart: unless-stopped
     ports: ["3100:3100"]
@@ -22,6 +22,11 @@ services:
       LLM_BASE_URL: http://litellm:4000/v1
       LLM_API_KEY: ${LITELLM_MASTER_KEY}
       LLM_MODEL: extract
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      TZ: Europe/Moscow
+      DISCOVERY_AT: "02:30"          # ночная проверка кандидатов
+      DISCOVERY_LIMIT: "30"          # фильмов за ночь (ротация по всей библиотеке)
     depends_on: [litellm]
 
   litellm:

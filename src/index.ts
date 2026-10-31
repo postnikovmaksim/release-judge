@@ -4,6 +4,9 @@ import { db } from './db.js';
 import { runSnapshot } from './snapshot.js';
 import { parseTopic } from './topic.js';
 import { judgeTopic } from './judge/service.js';
+import { runDiscovery, scheduleDiscovery } from './discovery.js';
+import { startPolling, sendText } from './telegram.js';
+import { addIgnore } from './db.js';
 
 const app = Fastify({ logger: true });
 const rules = loadRules();
@@ -51,4 +54,22 @@ app.get('/verdicts', async (req) => {
   return rows.map(r => ({ ...r, reasons: JSON.parse(r.reasons) }));
 });
 
-app.listen({ port: config.port, host: '0.0.0.0' });
+app.post('/discovery/run', async (req) => {
+  const { limit, movieIds } = (req.body ?? {}) as { limit?: number; movieIds?: number[] };
+  if (movieIds?.length) return runDiscovery({ movieIds, log: m => app.log.info(m) });   // точечно — ждём результат
+  runDiscovery({ limit, log: m => app.log.info(m) });
+  return { started: true };
+});
+
+app.post('/telegram/test', async () => { await sendText('✅ release-judge подключён к боту'); return { ok: true }; });
+
+app.post('/ignore/import', async (req) => {         // перенос игнор-листа (например, media_skip из n8n)
+  const rows = (req.body ?? []) as { key: string; movieId?: number; title?: string }[];
+  let n = 0; for (const r of rows) if (r.key) { addIgnore(r.key, r.movieId ?? null, r.title ?? null, 'import'); n++; }
+  return { imported: n };
+});
+
+app.listen({ port: config.port, host: '0.0.0.0' }).then(() => {
+  scheduleDiscovery(m => app.log.info(m));
+  startPolling(m => app.log.info(m));
+});
