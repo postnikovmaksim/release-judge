@@ -1,5 +1,5 @@
 # Compose Manager project "automation" на Unraid. Данные: /mnt/user/appdata/automation/{release-judge,litellm}
-# Секреты — в .env рядом (не в git): RADARR_API_KEY, PROWLARR_API_KEY, LITELLM_MASTER_KEY, LITELLM_UI_PASSWORD, LITELLM_DB_PASSWORD, GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, MISTRAL_API_KEY
+# Секреты — в .env рядом (не в git): RADARR_API_KEY, PROWLARR_API_KEY, LITELLM_MASTER_KEY, LITELLM_UI_PASSWORD, LITELLM_DB_PASSWORD
 services:
   release-judge:
     image: postnikovm/release-judge:0.1      # пиним minor; latest — только для теста
@@ -35,10 +35,6 @@ services:
       STORE_MODEL_IN_DB: "True"                     # провайдеры/ключи можно добавлять в UI
       UI_USERNAME: admin
       UI_PASSWORD: ${LITELLM_UI_PASSWORD}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GROQ_API_KEY: ${GROQ_API_KEY}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
       # HTTPS_PROXY: http://<xray-http-proxy>:port   # если какой-то провайдер режет RU
     depends_on:
       litellm-db: { condition: service_healthy }

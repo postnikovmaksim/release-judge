@@ -1,22 +1,15 @@
-# Один логический model group "extract" -> несколько бесплатных провайдеров.
-# Роутер распределяет по rpm/tpm, на 429 уходит в cooldown и переключается на следующего.
-model_list:
-  - model_name: extract
-    litellm_params: { model: gemini/gemini-2.5-flash, api_key: os.environ/GEMINI_API_KEY, rpm: 10 }
-  - model_name: extract
-    litellm_params: { model: groq/llama-3.3-70b-versatile, api_key: os.environ/GROQ_API_KEY, rpm: 25 }
-  - model_name: extract
-    litellm_params: { model: mistral/mistral-small-latest, api_key: os.environ/MISTRAL_API_KEY, rpm: 1 }
-  - model_name: extract-fallback
-    litellm_params: { model: openrouter/meta-llama/llama-3.3-70b-instruct:free, api_key: os.environ/OPENROUTER_API_KEY }
+# Модели и ключи провайдеров хранятся в Postgres (STORE_MODEL_IN_DB) и управляются через UI: http://<unraid>:4000/ui
+# Public Model Name = "extract" у всех моделей для release-judge — роутер балансирует между ними
+# и на 429 уводит модель в cooldown, переключаясь на следующую.
+# Текущие (2026-10-31): mistral/mistral-small-latest (rpm 50, tpm 400k), groq/openai/gpt-oss-120b (rpm 25, tpm 7k, reasoning_effort=low)
+model_list: []
 
 router_settings:
   routing_strategy: usage-based-routing-v2
   num_retries: 2
   allowed_fails: 1
   cooldown_time: 120
-  fallbacks: [{ extract: [extract-fallback] }]
 
 litellm_settings:
   drop_params: true
-  request_timeout: 60
+  request_timeout: 90
