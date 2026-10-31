@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 
 const env = (k: string, d?: string) => {
@@ -24,6 +25,8 @@ export const config = {
 
 export function loadRules(): any {
   const own = join(config.configDir, 'rules.yaml');
-  const file = existsSync(own) ? own : join(config.configDir, 'rules.example.yaml');
+  const bundled = fileURLToPath(new URL('../config/rules.example.yaml', import.meta.url));
+  const file = existsSync(own) ? own : bundled;
   return YAML.parse(readFileSync(file, 'utf8'));
 }
+
