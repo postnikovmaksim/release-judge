@@ -17,9 +17,10 @@ export async function tg(method: string, body: any = {}): Promise<any> {
 const ICON: Record<string, string> = { UPGRADE: '🔼', REVIEW: '🤔', KEEP: '⏸', REJECT: '⛔' };
 
 /** Карточка по фильму: текущий файл + кандидаты UPGRADE/REVIEW с причинами и кнопками. */
-export async function sendMovieCard(movieId: number, title: string, currentLine: string, items: JudgeResult[]) {
+export async function sendMovieCard(movieId: number, title: string, currentLine: string, items: JudgeResult[], currentUrl?: string) {
   if (!enabled() || !items.length) return;
-  const lines = [`🎬 <b>${esc(title)}</b>`, `Сейчас: ${esc(currentLine)}`, ''];
+  const cur = currentUrl ? `<a href="${esc(currentUrl)}">${esc(currentLine)}</a>` : esc(currentLine);
+  const lines = [`🎬 <b>${esc(title)}</b>`, `Сейчас: ${cur}`, ''];
   items.forEach((it, i) => {
     lines.push(`${ICON[it.verdict]} <b>#${i + 1} ${it.verdict}</b> — <a href="${esc(it.topicUrl)}">${esc(it.candidateTitle.slice(0, 120))}</a>`);
     it.reasons.forEach(r => lines.push(`   • ${esc(r)}`));

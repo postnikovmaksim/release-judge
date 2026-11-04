@@ -17,6 +17,7 @@ export const config = {
   prowlarr: { url: env('PROWLARR_URL', 'http://prowlarr:9696'), apiKey: env('PROWLARR_API_KEY', ''), db: env('PROWLARR_DB', '/prowlarr/prowlarr.db') },
   flaresolverr: { url: env('FLARESOLVERR_URL', 'http://flaresolverr:8191') },
   hardlinks: { url: env('HARDLINKS_URL', 'http://media-hardlinks:3000') },
+  qbit: { urls: env('QBIT_URLS', 'http://192.168.1.6:8080,http://192.168.1.5:9080').split(',').map(s => s.trim()).filter(Boolean) },
   telegram: { token: env('TELEGRAM_BOT_TOKEN', ''), chatId: env('TELEGRAM_CHAT_ID', '') },
   discovery: {
     at: env('DISCOVERY_AT', '02:30'),                       // локальное время ночного прогона (TZ контейнера)

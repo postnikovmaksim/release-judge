@@ -3,83 +3,89 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import YAML from 'yaml';
 import { parseMediainfoText } from '../spec/mediainfoText.js';
-import { specFromMediainfo, enrichAudio } from '../spec/fromMediainfo.js';
-import { audioHints } from '../spec/descFlags.js';
+import { specFromMediainfo, enrichAudio, fillFromSummary } from '../spec/fromMediainfo.js';
+import { audioHints, audioSummary } from '../spec/descFlags.js';
 import { judge } from './compare.js';
+import type { ReleaseSpec } from '../spec/schema.js';
 
 const fx = (n: string) => readFileSync(new URL(`../../test/fixtures/${n}`, import.meta.url), 'utf8');
 const rules = YAML.parse(readFileSync(new URL('../../config/rules.example.yaml', import.meta.url), 'utf8'));
+const rt = (): ReleaseSpec => { const s = specFromMediainfo(parseMediainfoText(fx('twilight-rt.mediainfo.txt'))); s.video.dvLayer = 'FEL'; return s; };
+const thd = (): ReleaseSpec => { const s = specFromMediainfo(parseMediainfoText(fx('twilight-thd.mediainfo.txt')));
+  enrichAudio(s, audioHints('Аудио#1: Russian: DTS 5.1 |Дубляж, Пифагор|')); return s; };
+const other = (s: ReleaseSpec) => { s.uniqueId = 'other'; return s; };
 
-const rt = () => { const s = specFromMediainfo(parseMediainfoText(fx('twilight-rt.mediainfo.txt'))); s.video.dvLayer = 'FEL'; return s; };
-const thd = () => { const s = specFromMediainfo(parseMediainfoText(fx('twilight-thd.mediainfo.txt')));
-  enrichAudio(s, audioHints('Аудио#1: Russian: DTS 5.1 |Дубляж, West Video|')); return s; };
-
-test('Twilight: файл RuTracker (DV FEL), кандидат TeamHD (HDR10) -> KEEP', () => {
-  const j = judge(rt(), thd(), rules, { year: 2008, currentTracker: undefined, candidateTracker: 'TeamHD' });
-  assert.equal(j.verdict, 'KEEP');
-  assert.match(j.reasons[0], /видео/);
+test('Сумерки: файл RT (DV), кандидат TeamHD (HDR10) -> KEEP', () => {
+  assert.equal(judge(rt(), thd(), rules, { year: 2008, candidateTracker: 'TeamHD' }).verdict, 'KEEP');
 });
-
-test('Twilight: файл TeamHD, кандидат RuTracker (DV FEL) -> UPGRADE (трекер — только тай-брейк)', () => {
-  const j = judge(thd(), rt(), rules, { year: 2008, currentTracker: 'TeamHD', candidateTracker: 'RuTracker' });
-  assert.equal(j.verdict, 'UPGRADE');
+test('файл TeamHD HDR10, кандидат RT DV, та же студия дубляжа -> UPGRADE', () => {
+  assert.equal(judge(thd(), rt(), rules, { year: 2008, currentTracker: 'TeamHD', candidateTracker: 'RuTracker' }).verdict, 'UPGRADE');
 });
-
-test('то же, но без TeamHD у текущего -> чистый UPGRADE', () => {
-  const j = judge(thd(), rt(), rules, { year: 2008, currentTracker: undefined, candidateTracker: 'RuTracker' });
-  assert.equal(j.verdict, 'UPGRADE');
+test('другая студия дубляжа -> REVIEW', () => {
+  const cur = thd(); cur.audio[0].author = 'West Video';
+  const j = judge(cur, rt(), rules, {});
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.reasons.some(r => /студия/.test(r)));
 });
-
+test('тот же релиз -> KEEP', () => assert.match(judge(rt(), rt(), rules, {}).reasons[0], /тот же релиз/));
+test('P8 и P7 FEL равны -> KEEP', () => {
+  const cur = rt(); cur.video.dvProfile = 8; cur.video.dvLayer = undefined; cur.uniqueId = 'p8';
+  assert.equal(judge(cur, rt(), rules, {}).verdict, 'KEEP');
+});
+test('HDR10+ поверх DV — лучше', () => {
+  const c = other(rt()); c.video.hdr = ['dv', 'hdr10plus', 'hdr10'];
+  assert.equal(judge(rt(), c, rules, {}).verdict, 'UPGRADE');
+});
+test('редакция: файл Extended, кандидат Theatrical -> REJECT', () => {
+  assert.equal(judge(thd(), other(rt()), rules, { currentEditionText: 'Two Towers Extended Edition', candidateEditionText: '[Theatrical Cut]' }).verdict, 'REJECT');
+});
+test('редакция: кандидат длиннее -> REVIEW даже при худшем видео', () => {
+  const j = judge(rt(), other(thd()), rules, { currentEditionText: 'Movie (2001)', candidateEditionText: 'Movie [Extended Edition]' });
+  assert.equal(j.verdict, 'REVIEW');
+  assert.match(j.reasons[0], /длинная редакция/);
+});
+test('дубляж lossless -> lossy -> REVIEW', () => {
+  const cur = thd(); cur.audio[0].lossless = true; cur.audio[0].codec = 'DTS-HD MA';
+  const j = judge(cur, rt(), rules, {});
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.reasons.some(r => /lossless → lossy/.test(r)));
+});
 test('потеря дубляжа -> REJECT', () => {
-  const cand = rt(); cand.audio = cand.audio.filter(a => a.kind !== 'dub');
-  assert.equal(judge(thd(), cand, rules, {}).verdict, 'REJECT');
+  const c = rt(); c.audio = c.audio.filter(a => a.kind !== 'dub');
+  assert.equal(judge(thd(), c, rules, {}).verdict, 'REJECT');
 });
-
+test('дубляж заявлен в названии, но не распознан -> не REJECT', () => {
+  const c = rt(); c.audio = c.audio.filter(a => a.kind !== 'dub'); c.uniqueId = 'x';
+  assert.notEqual(judge(thd(), c, rules, { candidateTitle: 'Movie [2008, UHD BDRemux] Dub + MVO' }).verdict, 'REJECT');
+});
+test('RUS(ext) -> REVIEW, не REJECT', () => {
+  const c = rt(); c.audio = c.audio.filter(a => a.lang !== 'rus'); c.uniqueId = 'x';
+  const j = judge(thd(), c, rules, { candidateTitle: 'Kimi no Na wa [RUS(ext),JAP] [2016, BDRemux, HDR10]' });
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.reasons.some(r => /внешняя/.test(r)));
+});
+test('неизвестная русская дорожка у файла ≠ «нет дубляжа»', () => {
+  const cur = thd(); cur.audio[0].kind = 'unknown'; cur.audio[0].author = undefined; cur.video.hdr = ['dv', 'hdr10'];
+  assert.equal(judge(cur, other(rt()), rules, {}).verdict, 'KEEP');
+});
+test('русский фильм: оригинал — русская дорожка, дубляж не сравнивается', () => {
+  const mk = (codec: string, lossless = false): ReleaseSpec => ({ video: { hdr: [], height: 1080, width: 1920, localized: false, upscale: false }, subs: [], confidence: 1,
+    audio: [{ lang: 'rus', kind: 'unknown', codec, lossless, channels: 2 }] } as any);
+  const j = judge(mk('FLAC', true), mk('AAC'), rules, { originalLang: 'rus' });
+  assert.equal(j.verdict, 'KEEP');
+});
 test('потеря Гоблина у старого фильма -> REVIEW', () => {
   const cur = thd(); cur.audio.push({ lang: 'rus', kind: 'avo', author: 'Гоблин', codec: 'AC3', title: 'AVO Гоблин' } as any);
   const j = judge(cur, rt(), rules, { year: 2001 });
   assert.equal(j.verdict, 'REVIEW');
   assert.ok(j.reasons.some(r => /Гоблин/.test(r)));
 });
-
 test('локализованный видеоряд -> REVIEW', () => {
-  const cand = rt(); cand.video.localized = true;
-  assert.equal(judge(thd(), cand, rules, {}).verdict, 'REVIEW');
+  const c = rt(); c.video.localized = true;
+  assert.equal(judge(thd(), c, rules, {}).verdict, 'REVIEW');
 });
-
-test('равное видео/звук: TeamHD побеждает прочий трекер (тай-брейк)', () => {
-  const other = () => { const s = rt(); s.uniqueId = 'other'; return s; };
-  assert.equal(judge(rt(), other(), rules, { currentTracker: undefined, candidateTracker: 'TeamHD' }).verdict, 'UPGRADE');
-  assert.equal(judge(rt(), other(), rules, { currentTracker: 'TeamHD', candidateTracker: 'RuTracker' }).verdict, 'KEEP');
-});
-
-test('тот же релиз (Unique ID совпадает) -> KEEP, даже если в описании FEL', () => {
-  const cur = rt(); cur.video.dvLayer = undefined;
-  const j = judge(cur, rt(), rules, {});
-  assert.equal(j.verdict, 'KEEP');
-  assert.match(j.reasons[0], /тот же релиз/);
-});
-
-test('P7 со слоем неизвестно vs P7 FEL — не апгрейд по слою', () => {
-  const cur = rt(); cur.video.dvLayer = undefined; cur.uniqueId = 'other';
-  assert.equal(judge(cur, rt(), rules, {}).verdict, 'KEEP');
-});
-
-test('дубляж EAC3 -> AC3 не считается потерей', () => {
-  const cur = thd(); cur.audio[0].codec = 'EAC3';
-  assert.equal(judge(cur, rt(), rules, {}).verdict, 'UPGRADE');
-});
-
-test('RuTor без языков в MediaInfo: дорожки из сводки, дубляж найден', async () => {
-  const { fillFromSummary } = await import('../spec/fromMediainfo.js');
-  const { audioSummary } = await import('../spec/descFlags.js');
-  const cand = rt(); cand.uniqueId = 'x'; cand.audio = [];
-  fillFromSummary(cand, audioSummary('Аудио 1: Русский 48 kHz, AC3, 6 ch 448 Kbps - Дубляж\nАудио 2: Русский 48 kHz, DTS, 6ch, 755 Kbps - Профессиональный двухголосый (Нордиск)\nАудио 6: Английский 48 kHz, DTS-X MA, 8ch, 3689 Kbps - Оригинал'));
-  assert.deepEqual(cand.audio.map(a => `${a.lang}/${a.kind}`), ['rus/dub', 'rus/dvo', 'eng/original']);
-  assert.notEqual(judge(thd(), cand, rules, {}).verdict, 'REJECT');
-});
-
-test('дорожки не распознаны -> не REJECT', () => {
-  const cand = rt(); cand.uniqueId = 'x'; cand.audio = [{ lang: 'und', kind: 'unknown' } as any];
-  assert.equal(judge(thd(), cand, rules, {}).verdict, 'KEEP');
+test('сводка RuTor: дорожки достраиваются', () => {
+  const c = rt(); c.audio = [];
+  fillFromSummary(c, audioSummary('Аудио 1: Русский 48 kHz, AC3, 6 ch 448 Kbps - Дубляж\nАудио 6: Английский 48 kHz, DTS-X MA, 8ch - Оригинал'));
+  assert.deepEqual(c.audio.map(a => `${a.lang}/${a.kind}`), ['rus/dub', 'eng/original']);
 });

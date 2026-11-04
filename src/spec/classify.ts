@@ -7,7 +7,7 @@ export const normLang = (l?: string) => { if (!l) return 'und'; const k = l.toLo
 
 const RULES: [AudioKind, RegExp][] = [
   ['commentary', /коммент|comment/i],
-  ['dub', /дубл|\bdub(bing|bed)?\b|^\s*D(\s|,|$)|полное дублирование/i],
+  ['dub', /дубл|\bdub(bing|bed|l)?\b|=dub|^\s*D(\s|,|$)|полное дублирование/i],
   ['mvo', /многоголос|\bMVO\b|^\s*P(\s|,|$)/i],
   ['dvo', /двухголос|\bDVO\b/i],
   ['avo', /авторск|одноголос|\bAVO\b|^\s*A(\s|,|$)/i],

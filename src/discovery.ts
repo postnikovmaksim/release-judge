@@ -4,6 +4,7 @@ import { radarr } from './radarr.js';
 import { judgeTopic, type JudgeResult } from './judge/service.js';
 import { trackerFor } from './trackers/registry.js';
 import { sendMovieCard, sendText } from './telegram.js';
+import { currentTopicUrl } from './currentTopic.js';
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 // Отклонения Radarr, которые означают «не апгрейд по мнению Radarr» — именно такие кандидаты нам и нужны
@@ -24,7 +25,7 @@ function pickMovies(movies: any[], limit: number) {
 
 export interface DiscoveryStats { movies: number; candidates: number; judged: number; upgrade: number; review: number; errors: number; }
 
-export async function checkMovie(m: any, log: (s: string) => void, stats: DiscoveryStats) {
+export async function checkMovie(m: any, log: (s: string) => void, stats: DiscoveryStats, force = false) {
   const d = config.discovery;
   const fileQ = m.movieFile.quality?.quality?.id;   // тот же уровень = то же качество Radarr (Remux-2160p к Remux-2160p)
   const releases: any[] = await radarr(`/release?movieId=${m.id}`);
@@ -37,7 +38,7 @@ export async function checkMovie(m: any, log: (s: string) => void, stats: Discov
     const url = r.infoUrl;
     if (!url || !trackerFor(url) || seen.has(url)) return false;
     if (isIgnored(url, r.guid)) return false;
-    if (recentlyJudged.get(m.id, url, `-${d.recheckDays} days`)) return false;
+    if (!force && recentlyJudged.get(m.id, url, `-${d.recheckDays} days`)) return false;
     seen.add(url); return true;
   }).slice(0, d.maxCandidatesPerMovie);
   stats.candidates += cands.length;
@@ -56,12 +57,13 @@ export async function checkMovie(m: any, log: (s: string) => void, stats: Discov
   if (results.length) {
     results.sort((a, b) => (a.verdict === 'UPGRADE' ? -1 : 1) - (b.verdict === 'UPGRADE' ? -1 : 1));
     const tracker = m.movieFile.releaseGroup ? ` · ${m.movieFile.releaseGroup}` : '';
-    await sendMovieCard(m.id, `${m.title} (${m.year})`, `${m.movieFile.quality?.quality?.name ?? ''} ${results[0].currentLabel ?? ''}${tracker}`, results);
+    const curUrl = await currentTopicUrl(m.movieFile.path);
+    await sendMovieCard(m.id, `${m.title} (${m.year})`, `${m.movieFile.quality?.quality?.name ?? ''} ${results[0].currentLabel ?? ''}${tracker}`, results, curUrl);
   }
 }
 
 let running = false;
-export async function runDiscovery(opts: { limit?: number; movieIds?: number[]; log?: (s: string) => void } = {}) {
+export async function runDiscovery(opts: { limit?: number; movieIds?: number[]; force?: boolean; log?: (s: string) => void } = {}) {
   if (running) return { started: false, reason: 'already running' };
   running = true;
   const log = opts.log ?? console.log;
@@ -70,7 +72,7 @@ export async function runDiscovery(opts: { limit?: number; movieIds?: number[]; 
     const movies: any[] = await radarr('/movie');
     const list = opts.movieIds?.length ? movies.filter(m => opts.movieIds!.includes(m.id) && m.hasFile) : pickMovies(movies, opts.limit ?? config.discovery.limit);
     for (const m of list) {
-      try { await checkMovie(m, log, stats); stats.movies++; }
+      try { await checkMovie(m, log, stats, opts.force); stats.movies++; }
       catch (e: any) { stats.errors++; log(`discovery ${m.title}: ${e.message}`); }
       await sleep(config.discovery.delayMs);
     }

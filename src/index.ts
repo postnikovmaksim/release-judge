@@ -55,8 +55,8 @@ app.get('/verdicts', async (req) => {
 });
 
 app.post('/discovery/run', async (req) => {
-  const { limit, movieIds } = (req.body ?? {}) as { limit?: number; movieIds?: number[] };
-  if (movieIds?.length) return runDiscovery({ movieIds, log: m => app.log.info(m) });   // точечно — ждём результат
+  const { limit, movieIds, force } = (req.body ?? {}) as { limit?: number; movieIds?: number[]; force?: boolean };
+  if (movieIds?.length) return runDiscovery({ movieIds, force, log: m => app.log.info(m) });   // точечно — ждём результат
   runDiscovery({ limit, log: m => app.log.info(m) });
   return { started: true };
 });
