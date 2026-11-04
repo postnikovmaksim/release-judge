@@ -46,7 +46,7 @@ export async function checkMovie(m: any, log: (s: string) => void, stats: Discov
   const results: JudgeResult[] = [];
   for (const r of cands) {
     try {
-      const j = await judgeTopic(m.id, r.infoUrl, { guid: r.guid, indexerId: r.indexerId, releaseTitle: r.title, indexer: r.indexer, movie: m });
+      const j = await judgeTopic(m.id, r.infoUrl, { guid: r.guid, indexerId: r.indexerId, releaseTitle: r.title, indexer: r.indexer, movie: m, force });
       stats.judged++;
       if (j.verdict === 'UPGRADE') stats.upgrade++;
       if (j.verdict === 'REVIEW') stats.review++;

@@ -28,7 +28,11 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
   const orig = originalLang ? normLang(originalLang) : undefined;
 
   const audio = tracks.filter(t => t['@type'] === 'Audio').map(a => {
-    const lang = normLang(a.Language);
+    let lang = normLang(a.Language);
+    if (lang === "und") {   // язык не указан, но дорожка названа «Русский» / «RUS» / «English»
+      const m = (a.Title ?? "").match(/^\s*\|?\s*(rus|russian|русский|eng|english|английский|ukr|ukrainian|украинский)(?![a-zа-яё])/i);
+      if (m) lang = normLang(m[1]);
+    }
     a = { ...a, Title: normalizeHomoglyphs(a.Title) };
     const commercial = `${a.Format_Commercial_IfAny ?? ''} ${a.Format ?? ''} ${a.Format_AdditionalFeatures ?? ''}`;
     return {

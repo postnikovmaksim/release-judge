@@ -81,3 +81,8 @@ test('дубляж из названия раздачи, если дорожка
   applyTitleDub(s, true);
   assert.equal(s.audio[0].kind, 'dub');
 });
+
+test('язык из названия дорожки, если Language пуст', () => {
+  const s = specFromMediainfo(parseMediainfoText('Video\nFormat : HEVC\nAudio #1\nFormat : AC-3\nTitle : RUS\nAudio #2\nFormat : AC-3\nTitle : Русский\nAudio #3\nFormat : DTS\nTitle : Rush commentary'));
+  assert.deepEqual(s.audio.map(a => a.lang), ['rus', 'rus', 'und']);
+});
