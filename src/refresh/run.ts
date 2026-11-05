@@ -15,7 +15,7 @@ import { fetchPage, fetchBinary } from '../trackers/fetchPage.js';
 import { trackerFor } from '../trackers/registry.js';
 import { parseTorrent, type TorrentMeta } from '../torrent/bencode.js';
 import { qb, sonarr } from './clients.js';
-import { isUnregistered, pickDownloadLink, diffFiles, kindOf, strategy, fmtSize, sameFile, type FileDiff, type Kind } from './plan.js';
+import { isUnregistered, pickDownloadLink, diffFiles, kindOf, strategy, fmtSize, sameFile, planTvImport, type LibEp, type FileDiff, type Kind } from './plan.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS refresh_job (
   old_hash TEXT PRIMARY KEY, instance TEXT, name TEXT, category TEXT, kind TEXT, topic_url TEXT,
@@ -152,11 +152,10 @@ async function advance(log: (m: string) => void) {
       if (j.status === 'downloading') {
         if (t.progress < 1) continue;
         if (j.kind === 'tv') {
-          await sonarr('/command', { method: 'POST', body: JSON.stringify({ name: 'DownloadedEpisodesScan', path: t.content_path, importMode: 'Copy' }) });
+          const res = await importTv(j, t);
           await removeOld(j, false);
-          upd(j.old_hash, { status: 'done' });
-          const d = JSON.parse(j.diff ?? 'null');
-          await sendText(`✅ ${esc(j.name)}: докачано${d ? `, новых файлов: ${d.added.length}` : ''}; Sonarr импортирует`);
+          upd(j.old_hash, { status: 'done', error: res.ok ? null : res.text });
+          await sendText(`${res.ok ? '✅' : '⚠️'} ${esc(j.name)}: докачано. ${esc(res.text)}`);
         } else if (j.strategy === 'same_path') {
           await removeOld(j, false);
           upd(j.old_hash, { status: 'done' });
@@ -273,3 +272,55 @@ export function scheduleRefresh(log: (m: string) => void) {
 }
 
 export const jobs = () => db.prepare('SELECT * FROM refresh_job ORDER BY updated_at DESC LIMIT 100').all();
+
+/** Все файлы серий в Sonarr (размер → серия). Нужен один раз на прогон. */
+async function sonarrLibrary(): Promise<LibEp[]> {
+  const out: LibEp[] = [];
+  for (const sr of await sonarr<any[]>('/series')) {
+    if (!sr.statistics?.episodeFileCount) continue;
+    const files = await sonarr<any[]>(`/episodefile?seriesId=${sr.id}`);
+    if (!files.length) continue;
+    const eps = await sonarr<any[]>(`/episode?seriesId=${sr.id}`);
+    for (const f of files) for (const e of eps.filter(e => e.episodeFileId === f.id))
+      out.push({ seriesId: sr.id, seasonNumber: e.seasonNumber, episodeNumber: e.episodeNumber, size: f.size, quality: f.quality, languages: f.languages });
+  }
+  return out;
+}
+
+/**
+ * Импорт докачанных серий. Sonarr сам не узнаёт раздачи с японскими названиями («Unknown Series»), поэтому
+ * сериал/сезон/сдвиг номеров определяем по неизменённым сериям (точный размер), новые и изменённые — ManualImport.
+ */
+async function importTv(j: any, t: any): Promise<{ ok: boolean; text: string }> {
+  try {
+    const files = (await qb(j.instance, `/torrents/files?hash=${j.new_hash}`) as any[]).map(f => ({ path: join(t.save_path, f.name), size: f.size }));
+    const lib = await sonarrLibrary();
+    const p = planTvImport(files, lib);
+    if (!p) {
+      await sonarr('/command', { method: 'POST', body: JSON.stringify({ name: 'DownloadedEpisodesScan', path: t.content_path, importMode: 'Copy' }) });
+      return { ok: false, text: 'не нашёл сериал по уже импортированным сериям — отдал Sonarr на авто-импорт, проверь Activity → Queue' };
+    }
+    if (!p.targets.length) return { ok: true, text: 'новых/изменённых серий для импорта нет' };
+    const eps = await sonarr<any[]>(`/episode?seriesId=${p.seriesId}`);
+    const ref = lib.find(e => e.seriesId === p.seriesId && e.seasonNumber === p.seasonNumber)!;
+    const items: any[] = [], missed: number[] = [];
+    for (const tg of p.targets) {
+      const ep = eps.find(e => e.seasonNumber === p.seasonNumber && e.episodeNumber === tg.episodeNumber);
+      if (!ep) { missed.push(tg.episodeNumber); continue; }
+      items.push({ path: tg.path, seriesId: p.seriesId, seasonNumber: p.seasonNumber, episodeIds: [ep.id], quality: ref.quality, languages: ref.languages, releaseGroup: trackerFor(j.topic_url)?.id ?? '', indexerFlags: 0, releaseType: 'singleEpisode' });
+    }
+    if (items.length) await sonarr('/command', { method: 'POST', body: JSON.stringify({ name: 'ManualImport', importMode: 'copy', files: items }) });
+    const sr = await sonarr<any>(`/series/${p.seriesId}`);
+    const list = items.map(i => 'E' + String(eps.find(e => e.id === i.episodeIds[0]).episodeNumber).padStart(2, '0')).join(', ');
+    return { ok: !missed.length, text: `Sonarr: ${sr.title} S${String(p.seasonNumber).padStart(2, '0')} — импорт ${list}${missed.length ? `; нет в Sonarr серий ${missed.join(', ')}` : ''}` };
+  } catch (e: any) { return { ok: false, text: `импорт в Sonarr не удался: ${e.message}` }; }
+}
+
+/** Ручной повтор импорта для уже завершённой работы (POST /refresh/import/:hash). */
+export async function reimportTv(oldHash: string) {
+  const j = db.prepare('SELECT * FROM refresh_job WHERE old_hash = ?').get(oldHash) as any;
+  if (!j || j.kind !== 'tv') throw new Error('нет такой работы по сериалу');
+  const [t] = await qb(j.instance, `/torrents/info?hashes=${j.new_hash}`) as any[];
+  if (!t) throw new Error('новый торрент не найден в qBit');
+  return importTv(j, t);
+}

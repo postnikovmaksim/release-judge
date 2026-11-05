@@ -78,3 +78,29 @@ test('[11-05 вечер] cross-seed на Unraid: одинаковый inode с �
   assert.equal(sameFile({ ino: 1234, size: 19e9 }, { ino: 1234, size: 19e9 }), true);
   assert.equal(sameFile({ ino: 1234, size: 80e9 }, { ino: 1234, size: 19e9 }), false);   // «300» vs ReZero
 });
+
+test('[11-05 вечер] номер серии из имени файла (реальные раздачи Tapochek)', async () => {
+  const { parseEpisodeNumber } = await import('./plan.js');
+  assert.equal(parseEpisodeNumber('Kusuriya no Hitorigoto 3 (WEBRip 1080p)/05. Kusuriya no Hitorigoto 3 (WEBRip 1080p).mkv'), 5);
+  assert.equal(parseEpisodeNumber('Steel Ball Run JoJo no Kimyou na Bouken [WEB-DL 1080p]/Steel Ball Run JoJo no Kimyou na Bouken - 07 [WEB-DL NF 1080p AVC AAC].mkv'), 7);
+  assert.equal(parseEpisodeNumber('Show/Show.S02E11.1080p.WEB-DL.mkv'), 11);
+  assert.equal(parseEpisodeNumber('Cyberpunk Edgerunners 2 [2160p WEB-DL DV HDR10]/Cyberpunk Edgerunners 2 - 09 [2160p WEB-DL DV HDR10].mkv'), 9);
+});
+
+test('[11-05 вечер] Sonarr не узнаёт японские названия — сериал/сезон/сдвиг берём по совпадению размеров с библиотекой', async () => {
+  const { planTvImport } = await import('./plan.js');
+  const q = { quality: { id: 3 } }, l = [{ id: 1 }];
+  const lib = [   // The Apothecary Diaries S03 (импорт копией, размеры как у неизменённых файлов раздачи)
+    { seriesId: 51, seasonNumber: 3, episodeNumber: 1, size: 1071419873, quality: q, languages: l },
+    { seriesId: 51, seasonNumber: 3, episodeNumber: 2, size: 1042887180, quality: q, languages: l },
+    { seriesId: 51, seasonNumber: 3, episodeNumber: 3, size: 1060708526, quality: q, languages: l },
+    { seriesId: 51, seasonNumber: 3, episodeNumber: 4, size: 1031874719, quality: q, languages: l },
+  ];
+  const d = 'Kusuriya no Hitorigoto 3 (WEBRip 1080p)/';
+  const files = [[1, 1071419873], [2, 1054987404], [3, 1072231558], [4, 1066585732], [5, 1050728505]]
+    .map(([n, s]) => ({ path: `${d}0${n}. Kusuriya no Hitorigoto 3 (WEBRip 1080p).mkv`, size: s }));
+  const p = planTvImport(files, lib)!;
+  assert.equal(p.seriesId, 51); assert.equal(p.seasonNumber, 3); assert.equal(p.offset, 0);
+  assert.deepEqual(p.targets.map(t => t.episodeNumber), [2, 3, 4, 5]);   // 02–04 изменены, 05 новая; 01 тот же — не трогаем
+  assert.equal(planTvImport(files, []), undefined);                      // ни одного совпадения — не угадываем
+});
