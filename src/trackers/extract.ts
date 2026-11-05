@@ -48,3 +48,6 @@ export function extract(trackerId: string, html: string): Extracted {
   }
   return { title, description: description.slice(0, 20_000), mediainfo, bdinfo };
 }
+
+/** Текст произвольного HTML-фрагмента (AJAX-вкладки). */
+export function textFromHtml(html: string): string { const $ = cheerio.load(html); return textOf($, $('body')); }

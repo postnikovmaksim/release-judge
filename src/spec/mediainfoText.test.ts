@@ -116,3 +116,22 @@ test('раздача без дампа: спецификация по назва
   assert.equal(s!.audio[0].kind, 'dub');
   assert.ok(s!.confidence < 1);
 });
+
+test('[11-05] Kinozal: страница + AJAX-вкладка «Релиз» → сводка с дорожками, уверенность < 1', async () => {
+  const { extract, textFromHtml } = await import('../trackers/extract.js');
+  const { specFromSummary } = await import('./summaryOnly.js');
+  const { fillFromSummary } = await import('./fromMediainfo.js');
+  const { audioSummary } = await import('./descFlags.js');
+  const ex = extract('Kinozal', fx('totalrecall-kinozal.page.html'));
+  assert.match(ex.title, /Вспомнить всё/);
+  const desc = ex.description + '\n' + textFromHtml(fx('totalrecall-kinozal.tab0.html'));
+  const s = specFromSummary(ex.title, desc)!;
+  fillFromSummary(s, audioSummary(desc));
+  assert.ok(s);
+  assert.equal(s.video.height, 2160);
+  assert.ok(s.video.hdr.includes('dv'));
+  assert.ok(s.audio.length >= 20);
+  assert.ok(s.audio.some(a => a.lang === 'rus' && a.kind === 'mvo' && a.lossless));
+  assert.ok(s.audio.some(a => a.lang === 'eng' && a.codec === 'TrueHD' && a.atmos));
+  assert.ok(s.confidence < 1);
+});
