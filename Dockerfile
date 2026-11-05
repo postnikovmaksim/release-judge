@@ -16,6 +16,6 @@ COPY package.json ./
 COPY config/rules.example.yaml ./config/rules.example.yaml
 ENV NODE_ENV=production PORT=3100 DATA_DIR=/state CONFIG_DIR=/config
 EXPOSE 3100
-HEALTHCHECK CMD wget -qO- http://localhost:3100/health || exit 1
+HEALTHCHECK CMD wget -qO- http://127.0.0.1:3100/health || exit 1
 ENTRYPOINT ["/sbin/tini","--"]
 CMD ["node","dist/index.js"]
