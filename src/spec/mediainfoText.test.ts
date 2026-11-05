@@ -135,3 +135,27 @@ test('[11-05] Kinozal: страница + AJAX-вкладка «Релиз» →
   assert.ok(s.audio.some(a => a.lang === 'eng' && a.codec === 'TrueHD' && a.atmos));
   assert.ok(s.confidence < 1);
 });
+
+test('[11-05] DV-профиль по сводке: только явные маркеры («5 x ЛО» ≠ P5), «Dolby Vision TV» = P8', async () => {
+  const { dvProfileFromText } = await import('./summaryOnly.js');
+  assert.equal(dvProfileFromText('Total Recall / 6 x ПМ, 7 x АП, 5 x ЛО, СТ / 4K, HEVC, HDR, Dolby Vision Profile 7 / ITA'), 7);
+  assert.equal(dvProfileFromText('Видео: HEVC (Dolby Vision, Version 1.0, dvhe.08.06, BL+RPU)'), 8);
+  assert.equal(dvProfileFromText('4K, HEVC, HDR, Dolby Vision TV / Blu-Ray Remux'), 8);
+  assert.equal(dvProfileFromText('UHD BDRemux 2160p DV P5'), 5);
+  assert.equal(dvProfileFromText('UHD BDRemux 2160p Dolby Vision, 5.1'), undefined);
+});
+
+test('[11-05] Kinozal без «Аудио N:» во вкладке: дорожки из сводки страницы + подписи вкладки', async () => {
+  const { extract, textFromHtml } = await import('../trackers/extract.js');
+  const { specFromSummary, kinozalAudioLines } = await import('./summaryOnly.js');
+  const page = fx('totalrecall-kinozal-dvtv.page.html'), tab = textFromHtml(fx('totalrecall-kinozal-dvtv.tab0.html'));
+  const ex = extract('Kinozal', page);
+  const desc = kinozalAudioLines(textFromHtml(page), tab) + '\n' + ex.description + '\n' + tab;
+  const s = specFromSummary(ex.title, desc)!;
+  assert.ok(s);
+  assert.equal(s.video.dvProfile, 8);
+  assert.equal(s.audio.length, 1);
+  assert.equal(s.audio[0].lang, 'rus');
+  assert.equal(s.audio[0].kind, 'mvo');
+  assert.equal(s.audio[0].codec, 'AC3');
+});

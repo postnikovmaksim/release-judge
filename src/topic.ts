@@ -5,7 +5,7 @@ import { extract, textFromHtml } from './trackers/extract.js';
 import { looksLikeMediainfo } from './spec/mediainfoText.js';
 import { parseMediainfoText } from './spec/mediainfoText.js';
 import { parseBdinfo } from './spec/bdinfo.js';
-import { specFromSummary } from './spec/summaryOnly.js';
+import { specFromSummary, kinozalAudioLines } from './spec/summaryOnly.js';
 import { specFromMediainfo, enrichAudio, fillFromSummary, applyTitleDub } from './spec/fromMediainfo.js';
 import { descFlags, audioHints, audioSummary, titleClaimsDub } from './spec/descFlags.js';
 import type { ReleaseSpec } from './spec/schema.js';
@@ -25,7 +25,7 @@ export async function parseTopic(url: string, opts: { force?: boolean } = {}): P
   }
   const { html, tracker } = await fetchPage(url);
   const ex = extract(tracker, html);
-  if (tracker === 'Kinozal') await kinozalReleaseTab(url, ex);
+  if (tracker === 'Kinozal') await kinozalReleaseTab(url, html, ex);
   const flags = descFlags(ex.description + '\n' + ex.title);
   let spec: ReleaseSpec | undefined;
   const tracks = ex.mediainfo ? parseMediainfoText(ex.mediainfo) : ex.bdinfo ? parseBdinfo(ex.bdinfo) : undefined;
@@ -48,13 +48,17 @@ export async function parseTopic(url: string, opts: { force?: boolean } = {}): P
 }
 
 /** Kinozal: на странице только «Техданные»-сводка, вкладка «Релиз» (дорожки «Аудио N: … - MVO …», иногда MediaInfo) грузится AJAX-ом. */
-async function kinozalReleaseTab(url: string, ex: { description: string; mediainfo?: string }) {
+async function kinozalReleaseTab(url: string, page: string, ex: { description: string; mediainfo?: string }) {
   const u = new URL(url); const id = u.searchParams.get('id');
   if (!id) return;
   try {
     const { html } = await fetchPage(`${u.origin}/get_srv_details.php?id=${id}&pagesd=0`);
     const tx = textFromHtml(html);
     if (!ex.mediainfo && looksLikeMediainfo(tx)) ex.mediainfo = tx;
-    else ex.description = (ex.description + '\n' + tx).slice(0, 20_000);
+    else {
+      // нет нумерованных «Аудио N:» во вкладке — собираем их из сводки страницы
+      const extra = /^\s*(?:Аудио|Audio)\s*#?\s*\d+\s*:/im.test(tx) ? '' : kinozalAudioLines(textFromHtml(page), tx);
+      ex.description = (extra + '\n' + ex.description + '\n' + tx).slice(0, 20_000);
+    }
   } catch { /* вкладка не обязательна */ }
 }
