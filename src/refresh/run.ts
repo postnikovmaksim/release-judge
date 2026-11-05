@@ -117,17 +117,18 @@ async function start(c: Candidate, log: (m: string) => void) {
   form.append('savepath', savePath); form.append('category', c.category); form.append('tags', 'refreshed');
   form.append('contentLayout', 'Original'); form.append('autoTMM', 'false');
   form.append('stopped', a.strategy === 'same_path' ? 'true' : 'false');   // на старом пути — сначала переименовать корень и перепроверить
-  // изменённые файлы сериала: старый файл отодвигаем (.old), иначе докачка писала бы прямо в hardlink библиотеки
-  if (c.kind === 'tv' && a.strategy === 'same_path' && a.diff?.changed.length) {
-    for (const p of a.diff.changed) {
-      const full = a.diff.oldRoot ? `${a.diff.oldRoot}/${p}` : p;
-      await qb(c.instance, '/torrents/renameFile', { hash: c.hash, oldPath: full, newPath: full + '.old' });
-    }
-  }
   await qb(c.instance, '/torrents/add', form);
   const h = a.newHash;
   if (h && a.strategy === 'same_path') {
     await new Promise(r => setTimeout(r, 3000));
+    if (!(await qb(c.instance, `/torrents/info?hashes=${h}`) as any[]).length) throw new Error('qBit не добавил новый торрент');
+    // изменённые серии: старый файл отодвигаем (.old) — только после того, как новый торрент точно добавлен (он стоит на паузе),
+    // иначе докачка писала бы прямо в hardlink библиотеки
+    if (c.kind === 'tv' && a.diff?.changed.length)
+      for (const p of a.diff.changed) {
+        const full = a.diff.oldRoot ? `${a.diff.oldRoot}/${p}` : p;
+        await qb(c.instance, '/torrents/renameFile', { hash: c.hash, oldPath: full, newPath: full + '.old' });
+      }
     if (a.diff?.oldRoot && a.diff.newRoot && a.diff.oldRoot !== a.diff.newRoot)
       await qb(c.instance, '/torrents/renameFolder', { hash: h, oldPath: a.diff.newRoot, newPath: a.diff.oldRoot });
     if (a._meta && !a._meta.multiFile) {
@@ -240,13 +241,19 @@ async function removeOld(j: any, withData: boolean) {
   await qb(j.instance, '/torrents/delete', { hashes: j.old_hash, deleteFiles: String(del) });
 }
 
+/** Повторить: «хэш тот же» — раз в сутки; ошибка до запуска (сеть, трекер) — через час. Ошибки после запуска не повторяем. */
+const retryable = (j: { status: string; strategy: string | null; updated_at: string }) => {
+  const age = Date.now() - Date.parse(j.updated_at + 'Z');
+  return (j.status === 'skipped' && age > 24 * 3600_000) || (j.status === 'error' && !j.strategy && age > 3600_000);
+};
+
 /** Один проход: найти новые обновлённые раздачи и продвинуть начатые. */
 export async function runRefresh(log: (m: string) => void, opts: { dryRun?: boolean } = {}) {
   const found = await detect();
   const res: any[] = [];
   for (const c of found) {
-    const job = db.prepare('SELECT status, updated_at FROM refresh_job WHERE old_hash = ?').get(c.hash) as any;
-    if (job && job.status !== 'new' && !(job.status === 'skipped' && Date.now() - Date.parse(job.updated_at + 'Z') > 24 * 3600_000)) continue;
+    const job = db.prepare('SELECT status, strategy, updated_at FROM refresh_job WHERE old_hash = ?').get(c.hash) as any;
+    if (job && job.status !== 'new' && !retryable(job)) continue;
     if (opts.dryRun) {
       try { const a = await analyse(c); res.push({ name: c.name, kind: c.kind, tracker: c.tracker, strategy: a.strategy, newHash: a.newHash, movieId: a.movieId, note: a.note, diff: a.diff && { added: a.diff.added.length, changed: a.diff.changed.length, removed: a.diff.removed.length, identical: a.diff.identical } }); }
       catch (e: any) { res.push({ name: c.name, error: e.message }); }
