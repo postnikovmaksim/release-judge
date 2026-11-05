@@ -18,6 +18,12 @@ export const config = {
   flaresolverr: { url: env('FLARESOLVERR_URL', 'http://flaresolverr:8191') },
   hardlinks: { url: env('HARDLINKS_URL', 'http://media-hardlinks:3000') },
   qbit: { urls: env('QBIT_URLS', 'http://192.168.1.6:8080,http://192.168.1.5:9080').split(',').map(s => s.trim()).filter(Boolean) },
+  sonarr: { url: env('SONARR_URL', 'http://192.168.1.244:8989'), apiKey: env('SONARR_API_KEY', '') },
+  refresh: {                                              // обновлённые раздачи (трекер: torrent not registered)
+    enabled: env('REFRESH_ENABLED', 'true') === 'true',
+    everyMin: Number(env('REFRESH_EVERY_MIN', '30')),
+    categories: env('REFRESH_CATEGORIES', 'movies,tv,tv-imported').split(',').map(s => s.trim()),
+  },
   telegram: { token: env('TELEGRAM_BOT_TOKEN', ''), chatId: env('TELEGRAM_CHAT_ID', '') },
   discovery: {
     at: env('DISCOVERY_AT', '02:30'),                       // локальное время ночного прогона (TZ контейнера)

@@ -20,6 +20,8 @@ export const TRACKERS: TrackerDef[] = [
     mainPost: '.mn1_content, .content' },
   { id: 'NNM', hosts: /(^|\.)nnmclub\.(to|me)$/i, prowlarrName: /^NoNaMe/i, cookieFrom: 'status', flaresolverr: true,
     mainPost: '.postbody:first', mediainfo: '.spoiler-wrap:has(.spoiler-head:contains("MediaInfo")) .spoiler-body pre' },
+  { id: 'BitRu', hosts: /(^|\.)bitru\.org$/i, prowlarrName: /^BitRu/i, cookieFrom: 'status', flaresolverr: true,
+    mainPost: '#details, .details, body' },
   { id: 'RuTor', hosts: /(^|\.)rutor\.(info|is|org)$/i, prowlarrName: /^RuTor/i, cookieFrom: 'none', flaresolverr: false,
     mainPost: '#details', mediainfo: 'textarea.hidearea' },
 ];

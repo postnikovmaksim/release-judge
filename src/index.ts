@@ -6,6 +6,7 @@ import { parseTopic } from './topic.js';
 import { judgeTopic } from './judge/service.js';
 import { runDiscovery, scheduleDiscovery } from './discovery.js';
 import { startPolling, sendText } from './telegram.js';
+import { runRefresh, scheduleRefresh, jobs } from './refresh/run.js';
 import { addIgnore } from './db.js';
 
 const app = Fastify({ logger: true });
@@ -61,6 +62,9 @@ app.post('/discovery/run', async (req) => {
   return { started: true };
 });
 
+app.get('/refresh/plan', async () => runRefresh(m => app.log.info(m), { dryRun: true }));
+app.post('/refresh/run', async () => runRefresh(m => app.log.info(m)));
+app.get('/refresh/jobs', async () => jobs());
 app.post('/telegram/test', async () => { await sendText('✅ release-judge подключён к боту'); return { ok: true }; });
 
 app.post('/ignore/import', async (req) => {         // перенос игнор-листа (например, media_skip из n8n)
@@ -72,4 +76,5 @@ app.post('/ignore/import', async (req) => {         // перенос игнор
 app.listen({ port: config.port, host: '0.0.0.0' }).then(() => {
   scheduleDiscovery(m => app.log.info(m));
   startPolling(m => app.log.info(m));
+  scheduleRefresh(m => app.log.info(m));
 });

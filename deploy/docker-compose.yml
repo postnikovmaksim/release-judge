@@ -1,5 +1,5 @@
 # Compose Manager project "automation" на Unraid. Данные: /mnt/user/appdata/automation/{release-judge,litellm}
-# Секреты — в .env рядом (не в git): RADARR_API_KEY, PROWLARR_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, LITELLM_MASTER_KEY, LITELLM_UI_PASSWORD, LITELLM_DB_PASSWORD
+# Секреты — в .env рядом (не в git): RADARR_API_KEY, SONARR_API_KEY, PROWLARR_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, LITELLM_MASTER_KEY, LITELLM_UI_PASSWORD, LITELLM_DB_PASSWORD
 services:
   release-judge:
     image: postnikovm/release-judge:0.5      # пиним minor; latest — только для теста
