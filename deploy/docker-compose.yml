@@ -29,7 +29,7 @@ services:
       DISCOVERY_LIMIT: "30"          # фильмов за ночь (ротация по всей библиотеке)
       SONARR_URL: http://192.168.1.244:8989
       SONARR_API_KEY: ${SONARR_API_KEY}
-      REFRESH_ENABLED: "false"       # обновлённые раздачи (torrent not registered): включить после проверки плана
+      REFRESH_ENABLED: "true"        # обновлённые раздачи (torrent not registered): автоматически, фильмы на месте
       REFRESH_EVERY_MIN: "30"
     depends_on: [litellm]
 
