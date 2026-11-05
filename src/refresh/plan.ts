@@ -61,3 +61,7 @@ export function strategy(kind: Kind, _d: FileDiff, sharedWithOtherTorrent = fals
 }
 
 export const fmtSize = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} ГБ` : `${Math.round(b / 1e6)} МБ`);
+
+/** Тот же файл на shfs: inode совпадает, размер совпадает (у разных многогигабайтных файлов — нет). */
+export const sameFile = (s: { ino: number; size: number }, me: { ino: number; size: number }) => s.ino === me.ino && s.size === me.size;
+

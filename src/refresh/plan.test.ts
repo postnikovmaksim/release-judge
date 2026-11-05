@@ -72,3 +72,9 @@ test('[11-05] категории: tv / tv-imported — сериал, movies — 
   assert.equal(kindOf('tv-imported'), 'tv'); assert.equal(kindOf('movies'), 'movie');
   assert.equal(kindOf('temp'), undefined); assert.equal(kindOf('cross-seed'), undefined);
 });
+
+test('[11-05 вечер] cross-seed на Unraid: одинаковый inode с разных дисков — не тот же файл, нужен ещё размер', async () => {
+  const { sameFile } = await import('./plan.js');
+  assert.equal(sameFile({ ino: 1234, size: 19e9 }, { ino: 1234, size: 19e9 }), true);
+  assert.equal(sameFile({ ino: 1234, size: 80e9 }, { ino: 1234, size: 19e9 }), false);   // «300» vs ReZero
+});

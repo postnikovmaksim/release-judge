@@ -15,7 +15,7 @@ import { fetchPage, fetchBinary } from '../trackers/fetchPage.js';
 import { trackerFor } from '../trackers/registry.js';
 import { parseTorrent, type TorrentMeta } from '../torrent/bencode.js';
 import { qb, sonarr } from './clients.js';
-import { isUnregistered, pickDownloadLink, diffFiles, kindOf, strategy, fmtSize, type FileDiff, type Kind } from './plan.js';
+import { isUnregistered, pickDownloadLink, diffFiles, kindOf, strategy, fmtSize, sameFile, type FileDiff, type Kind } from './plan.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS refresh_job (
   old_hash TEXT PRIMARY KEY, instance TEXT, name TEXT, category TEXT, kind TEXT, topic_url TEXT,
@@ -66,8 +66,9 @@ export async function fetchNewTorrent(c: Pick<Candidate, 'topicUrl' | 'tracker'>
 async function findMovieId(contentPath: string): Promise<number | undefined> {
   let ino: number;
   try { ino = statSync(contentPath).ino; } catch { return undefined; }
+  const size = statSync(contentPath).size;
   for (const r of db.prepare('SELECT movie_id, path FROM file_spec').all() as any[]) {
-    try { if (statSync(r.path).ino === ino) return r.movie_id; } catch { /* файл мог уйти */ }
+    try { if (sameFile(statSync(r.path), { ino, size })) return r.movie_id; } catch { /* файл мог уйти */ }
   }
   return undefined;
 }
@@ -211,14 +212,15 @@ async function importMovie(j: any, t: any) {
 
 /** Другой торрент (любой инстанс) раздаёт тот же файл фильма: тот же путь или hardlink (тот же inode). */
 async function sharedWith(c: Candidate): Promise<string | undefined> {
-  let ino: number | undefined;
-  try { const s = statSync(c.contentPath); if (s.isFile()) ino = s.ino; } catch { }
+  // Unraid /mnt/user (shfs) отдаёт inode нижних дисков — номера повторяются между дисками. Тот же файл = inode + размер + nlink>1.
+  let me: { ino: number; size: number } | undefined;
+  try { const s = statSync(c.contentPath); if (s.isFile() && s.nlink > 1) me = { ino: s.ino, size: s.size }; } catch { }
   for (const base of config.qbit.urls) {
     let l: any[]; try { l = await qb(base, '/torrents/info'); } catch { continue; }
     for (const x of l) {
       if (x.hash === c.hash) continue;
       if (x.content_path === c.contentPath) return `${x.category || 'торрент'} «${x.name}»`;
-      if (ino !== undefined) { try { if (statSync(x.content_path).ino === ino) return `${x.category || 'торрент'} «${x.name}»`; } catch { } }
+      if (me) { try { const s = statSync(x.content_path); if (sameFile(s, me)) return `${x.category || 'торрент'} «${x.name}»`; } catch { } }
     }
   }
   return undefined;
@@ -243,8 +245,8 @@ export async function runRefresh(log: (m: string) => void, opts: { dryRun?: bool
   const found = await detect();
   const res: any[] = [];
   for (const c of found) {
-    const job = db.prepare('SELECT status FROM refresh_job WHERE old_hash = ?').get(c.hash) as any;
-    if (job && job.status !== 'new') continue;
+    const job = db.prepare('SELECT status, updated_at FROM refresh_job WHERE old_hash = ?').get(c.hash) as any;
+    if (job && job.status !== 'new' && !(job.status === 'skipped' && Date.now() - Date.parse(job.updated_at + 'Z') > 24 * 3600_000)) continue;
     if (opts.dryRun) {
       try { const a = await analyse(c); res.push({ name: c.name, kind: c.kind, tracker: c.tracker, strategy: a.strategy, newHash: a.newHash, movieId: a.movieId, note: a.note, diff: a.diff && { added: a.diff.added.length, changed: a.diff.changed.length, removed: a.diff.removed.length, identical: a.diff.identical } }); }
       catch (e: any) { res.push({ name: c.name, error: e.message }); }
