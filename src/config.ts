@@ -17,7 +17,7 @@ export const config = {
   prowlarr: { url: env('PROWLARR_URL', 'http://prowlarr:9696'), apiKey: env('PROWLARR_API_KEY', ''), db: env('PROWLARR_DB', '/prowlarr/prowlarr.db') },
   flaresolverr: { url: env('FLARESOLVERR_URL', 'http://flaresolverr:8191') },
   hardlinks: { url: env('HARDLINKS_URL', 'http://media-hardlinks:3000') },
-  qbit: { urls: env('QBIT_URLS', 'http://192.168.1.6:8080,http://192.168.1.5:9080').split(',').map(s => s.trim()).filter(Boolean) },
+  qbit: { urls: env('QBIT_URLS', 'http://192.168.1.6:8080,http://192.168.1.5:9080,http://192.168.1.7:9081').split(',').map(s => s.trim()).filter(Boolean) },
   sonarr: { url: env('SONARR_URL', 'http://192.168.1.244:8989'), apiKey: env('SONARR_API_KEY', '') },
   refresh: {                                              // обновлённые раздачи (трекер: torrent not registered)
     enabled: env('REFRESH_ENABLED', 'true') === 'true',

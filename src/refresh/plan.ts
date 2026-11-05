@@ -49,14 +49,15 @@ export type Kind = 'tv' | 'movie';
 export const kindOf = (category: string): Kind | undefined => (/^tv/i.test(category) ? 'tv' : /^movies?/i.test(category) ? 'movie' : undefined);
 
 /**
- * Куда класть новую раздачу.
+ * Куда класть новую раздачу (решение Максима 2026-11-05: всё автоматически, фильмы — на месте).
  * Сериал: всегда тот же путь (старые серии перепроверятся, докачаются новые).
- * Фильм: тот же путь только если файлы идентичны (поменялось лишь описание/трекер) — иначе докачка в ту же папку
- * переписала бы файл, на который смотрит hardlink в библиотеке. Тогда — отдельная папка и импорт через Radarr.
+ * Фильм: тот же путь — qBit перепроверит и докачает изменившиеся куски прямо в файл; библиотека смотрит на него hardlink-ом
+ * и обновится сама. Исключение — файл раздаёт ещё один торрент (cross-seed): запись на месте сломала бы ту раздачу,
+ * тогда — отдельная папка и импорт через Radarr.
  */
-export function strategy(kind: Kind, d: FileDiff): 'same_path' | 'new_path' {
+export function strategy(kind: Kind, _d: FileDiff, sharedWithOtherTorrent = false): 'same_path' | 'new_path' {
   if (kind === 'tv') return 'same_path';
-  return d.identical ? 'same_path' : 'new_path';
+  return sharedWithOtherTorrent ? 'new_path' : 'same_path';
 }
 
 export const fmtSize = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} ГБ` : `${Math.round(b / 1e6)} МБ`);

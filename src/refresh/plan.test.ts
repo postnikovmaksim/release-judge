@@ -55,16 +55,17 @@ test('[11-05] сериал с заменённой серией — всё ра�
   assert.equal(strategy('tv', d), 'same_path');
 });
 
-test('[11-05] фильм: файл заменён — отдельная папка + Radarr (не пишем поверх hardlink)', () => {
+test('[11-05 вечер] фильм: файл заменён — на месте (докачка в тот же файл, hardlink библиотеки обновится); при cross-seed — рядом + Radarr', () => {
   const single = (name: string, len: number) => { const info = { name, length: len, 'piece length': 16384, pieces: Buffer.alloc(20) }; return be({ info }); };
   const d = diffFiles([{ name: 'Movie.2026.WEB-DL.mkv', size: 100 }], parseTorrent(single('Movie.2026.WEB-DL.v2.mkv', 120)), false);
   assert.ok(!d.identical);
-  assert.equal(strategy('movie', d), 'new_path');
+  assert.equal(strategy('movie', d), 'same_path');
+  assert.equal(strategy('movie', d, true), 'new_path');     // файл раздаёт ещё один торрент — не трогаем его
   const same = diffFiles([{ name: 'Movie.mkv', size: 100 }], parseTorrent(single('Movie.Remux.mkv', 100)), false);
   assert.ok(same.identical);
   assert.equal(strategy('movie', same), 'same_path');      // переименован, размер тот же → перепроверка, без перекачки
   const extras = diffFiles([{ name: 'M/M.mkv', size: 100 }], parseTorrent(multi('M', [['M.mkv', 100], ['Extras/x.mkv', 5]]).buf), true);
-  assert.equal(strategy('movie', extras), 'new_path');    // добавились файлы — фильм всё равно рядом
+  assert.equal(strategy('movie', extras), 'same_path');   // добавились файлы — докачаются рядом в той же папке
 });
 
 test('[11-05] категории: tv / tv-imported — сериал, movies — фильм, прочее не трогаем', () => {

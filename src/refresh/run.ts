@@ -1,7 +1,8 @@
 /**
  * Обновлённые раздачи: трекер отвечает «torrent not registered» → берём новый .torrent со страницы темы и докачиваем.
  * Сериалы: тот же путь, перепроверка, импорт новых серий в Sonarr, старый торрент удаляется без данных.
- * Фильмы: если файлы те же — тот же путь; иначе отдельная папка `_refresh`, импорт через Radarr (hardlink), старый торрент удаляется с данными.
+ * Фильмы: тот же путь, докачка прямо в файл (hardlink библиотеки обновится), потом Radarr перечитывает файл.
+ *   Если файл раздаёт ещё один торрент (cross-seed) — отдельная папка `_refresh`, импорт через Radarr, старый торрент удаляется с данными.
  */
 import { statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -82,11 +83,14 @@ export async function analyse(c: Candidate): Promise<PlanItem & { _buf?: Buffer;
   const files = await qb(c.instance, `/torrents/files?hash=${c.hash}`) as any[];
   const oldMulti = files.length > 1 || files[0]?.name.includes('/');
   const diff = diffFiles(files.map(f => ({ name: f.name, size: f.size })), meta, oldMulti);
-  const st = strategy(c.kind, diff);
+  const shared = c.kind === 'movie' ? await sharedWith(c) : undefined;
+  const st = strategy(c.kind, diff, !!shared);
   const movieId = c.kind === 'movie' ? await findMovieId(c.contentPath) : undefined;
   const note = c.kind === 'tv'
     ? `+${diff.added.length} новых файлов, ${diff.changed.length} изменено, ${diff.removed.length} убрано`
-    : diff.identical ? 'файлы те же — только перепроверка' : `файл заменён (${fmtSize(meta.totalSize)}) — качаю рядом и импортирую в Radarr`;
+    : diff.identical ? 'файлы те же — только перепроверка'
+    : shared ? `файл заменён (${fmtSize(meta.totalSize)}); его раздаёт ещё ${shared} — качаю рядом и импортирую в Radarr`
+    : `файл заменён (${fmtSize(meta.totalSize)}) — докачиваю на месте`;
   return { candidate: c, newHash: meta.infoHash, strategy: st, diff, movieId, note, _buf: n.buf, _meta: meta };
 }
 
@@ -101,7 +105,7 @@ async function start(c: Candidate, log: (m: string) => void) {
     .run(c.hash, c.instance, c.name, c.category, c.kind, c.topicUrl);
   const a = await analyse(c);
   if (!a.strategy) { upd(c.hash, { status: 'skipped', error: a.note }); return; }
-  if (c.kind === 'movie' && a.strategy === 'new_path' && !a.movieId) throw new Error('не нашёл фильм в Radarr по hardlink текущего файла');
+  if (c.kind === 'movie' && !a.movieId && a.strategy === 'new_path') throw new Error('не нашёл фильм в Radarr по hardlink текущего файла');
   if (a.newHash && await exists(a.newHash)) {          // уже добавлен (руками или прошлым прогоном)
     upd(c.hash, { new_hash: a.newHash, strategy: a.strategy, status: 'downloading', diff: JSON.stringify(a.diff ?? null), movie_id: a.movieId ?? null });
     return;
@@ -113,7 +117,7 @@ async function start(c: Candidate, log: (m: string) => void) {
   form.append('contentLayout', 'Original'); form.append('autoTMM', 'false');
   form.append('stopped', a.strategy === 'same_path' ? 'true' : 'false');   // на старом пути — сначала переименовать корень и перепроверить
   // изменённые файлы сериала: старый файл отодвигаем (.old), иначе докачка писала бы прямо в hardlink библиотеки
-  if (a.strategy === 'same_path' && a.diff?.changed.length) {
+  if (c.kind === 'tv' && a.strategy === 'same_path' && a.diff?.changed.length) {
     for (const p of a.diff.changed) {
       const full = a.diff.oldRoot ? `${a.diff.oldRoot}/${p}` : p;
       await qb(c.instance, '/torrents/renameFile', { hash: c.hash, oldPath: full, newPath: full + '.old' });
@@ -145,13 +149,7 @@ async function advance(log: (m: string) => void) {
       if (!t) { upd(j.old_hash, { status: 'error', error: 'новый торрент пропал из qBit' }); continue; }
       if (j.status === 'checking') {
         if (/checking/i.test(t.state)) continue;
-        if (j.kind === 'movie' && t.progress < 1) {    // «те же файлы» не подтвердились — не качаем поверх hardlink
-          await qb(j.instance, '/torrents/stop', { hashes: j.new_hash });
-          upd(j.old_hash, { status: 'error', error: `перепроверка ${Math.round(t.progress * 100)}% — файлы не те, остановил` });
-          await sendText(`⚠️ ${esc(j.name)}: после перепроверки ${Math.round(t.progress * 100)}%, остановил — проверь вручную`);
-          continue;
-        }
-        await qb(j.instance, '/torrents/start', { hashes: j.new_hash });
+        await qb(j.instance, '/torrents/start', { hashes: j.new_hash });   // фильм на месте: докачка изменившихся кусков прямо в файл
         upd(j.old_hash, { status: 'downloading' });
         continue;
       }
@@ -166,6 +164,8 @@ async function advance(log: (m: string) => void) {
         } else if (j.strategy === 'same_path') {
           await removeOld(j, false);
           upd(j.old_hash, { status: 'done' });
+          if (j.movie_id) await radarr('/command', { method: 'POST', body: JSON.stringify({ name: 'RescanMovie', movieId: j.movie_id }) }).catch(() => {});
+          await sendText(`✅ ${esc(j.name)}: новая версия раздачи докачана на месте${j.movie_id ? ', Radarr перечитал файл' : ''}`);
         } else {
           await importMovie(j, t);
           upd(j.old_hash, { status: 'importing' });
@@ -207,6 +207,21 @@ async function importMovie(j: any, t: any) {
   await radarr('/command', { method: 'POST', body: JSON.stringify({ name: 'ManualImport', importMode: 'copy', files: [{
     path: it.path, movieId: j.movie_id, quality: it.quality, languages: it.languages,
     releaseGroup: tracker === 'TeamHD' || tracker === 'Tapochek' ? tracker : it.releaseGroup, indexerFlags: 0 }] }) });
+}
+
+/** Другой торрент (любой инстанс) раздаёт тот же файл фильма: тот же путь или hardlink (тот же inode). */
+async function sharedWith(c: Candidate): Promise<string | undefined> {
+  let ino: number | undefined;
+  try { const s = statSync(c.contentPath); if (s.isFile()) ino = s.ino; } catch { }
+  for (const base of config.qbit.urls) {
+    let l: any[]; try { l = await qb(base, '/torrents/info'); } catch { continue; }
+    for (const x of l) {
+      if (x.hash === c.hash) continue;
+      if (x.content_path === c.contentPath) return `${x.category || 'торрент'} «${x.name}»`;
+      if (ino !== undefined) { try { if (statSync(x.content_path).ino === ino) return `${x.category || 'торрент'} «${x.name}»`; } catch { } }
+    }
+  }
+  return undefined;
 }
 
 /** Удалить старый торрент. С данными — только если эти файлы не раздаёт другой торрент (cross-seed). */
