@@ -4,7 +4,7 @@
  * Фильмы: тот же путь, докачка прямо в файл (hardlink библиотеки обновится), потом Radarr перечитывает файл.
  *   Если файл раздаёт ещё один торрент (cross-seed) — отдельная папка `_refresh`, импорт через Radarr, старый торрент удаляется с данными.
  */
-import { statSync } from 'node:fs';
+import { statSync, chmodSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import * as cheerio from 'cheerio';
 import { config } from '../config.js';
@@ -129,9 +129,10 @@ async function start(c: Candidate, log: (m: string) => void) {
       const oldName = c.contentPath.split('/').pop()!;
       if (oldName !== a._meta.name) await qb(c.instance, '/torrents/renameFile', { hash: h, oldPath: a._meta.name, newPath: oldName });
     }
+    await makeWritable(c.instance, h);   // старые файлы бывают nobody:users 644 — qBit (PUID 1000) не сможет дописать: Permission denied
     await qb(c.instance, '/torrents/recheck', { hashes: h });
   }
-  upd(c.hash, { new_hash: h ?? null, strategy: a.strategy, save_path: savePath, status: a.strategy === 'same_path' ? 'checking' : 'downloading', diff: JSON.stringify(a.diff ?? null), movie_id: a.movieId ?? null });
+  upd(c.hash, { new_hash: h ?? null, strategy: a.strategy, save_path: savePath, status: a.strategy === 'same_path' ? 'checking' : 'downloading', error: null, diff: JSON.stringify(a.diff ?? null), movie_id: a.movieId ?? null });
   log(`refresh: ${c.name} → ${a.strategy} (${a.note})`);
   await sendText(`🔄 <b>Раздача обновлена</b>: ${esc(c.name)}\n${a.note}\n<a href="${c.topicUrl}">${c.tracker}</a>`);
 }
@@ -323,4 +324,14 @@ export async function reimportTv(oldHash: string) {
   const [t] = await qb(j.instance, `/torrents/info?hashes=${j.new_hash}`) as any[];
   if (!t) throw new Error('новый торрент не найден в qBit');
   return importTv(j, t);
+}
+
+/** Файлы, которые новая раздача будет дописывать на месте, — rw для всех (стандарт Unraid 666). Hardlink в библиотеке — тот же inode, ему это не мешает. */
+async function makeWritable(instance: string, hash: string) {
+  const [t] = await qb(instance, `/torrents/info?hashes=${hash}`) as any[];
+  if (!t) return;
+  for (const f of await qb(instance, `/torrents/files?hash=${hash}`) as any[])
+    for (const p of [join(t.save_path, f.name), join(t.save_path, f.name) + ".!qB"]) {
+      try { const st = statSync(p); if ((st.mode & 0o666) !== 0o666) chmodSync(p, st.mode | 0o666); } catch { /* файла ещё нет */ }
+    }
 }
