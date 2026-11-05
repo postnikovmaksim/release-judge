@@ -47,13 +47,21 @@ export const editionRank = (t?: string) => (t && LONG_EDITION.test(t) ? 1 : 0);
 const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычная';
 
 // ---------- дубляж ----------
+const codecRank = (a: { codec?: string; lossless?: boolean }) =>
+  a.lossless ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
 type DubState = 'none' | 'unknown' | 'lossy' | 'lossless';
-interface DubInfo { state: DubState; label: string; authors: string[]; }
+interface DubInfo { state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; }
 const normAuthor = (a: string) => a.toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
 /** Метки источника, а не студии: официальная дорожка с диска/стриминга одинакова во всех раздачах. */
-export const OFFICIAL = /licen[cs]e|лицензи|uhd-?bd|blu-?ray|\bbd\b|\bdvd\b|itunes|netflix|amazon|disney|apple\s*tv|okko|кинопоиск|\bivi\b|\bcee\b|\beur\b|\busa\b|custom|atmos|\brus\b/i;
-const isOfficial = (a: { title?: string; author?: string }) => OFFICIAL.test(`${a.title ?? ''} ${a.author ?? ''}`);
-const realAuthor = (a?: string) => (a && !OFFICIAL.test(a) && normAuthor(a).length > 2 ? normAuthor(a) : undefined);
+export const OFFICIAL = /licen[cs]e|лицензи|uhd-?bd|blu-?ray|\bbd\b|\bdvd\b|\br5\b|itunes|netflix|amazon|disney|apple\s*tv|okko|кинопоиск|\bivi\b|\bcee\b|\beur\b|\busa\b/i;
+/** Любительская сборка (не официальная): Custom, RUSATMOS, апмикс... — хорошая, но решать вручную. */
+export const CUSTOM = /custom|кастом|любительск|сборк|up-?mix|апмикс|rusatmos/i;
+const tx = (a: { title?: string; author?: string }) => `${a.title ?? ''} ${a.author ?? ''}`;
+const isCustom = (a: { title?: string; author?: string }) => CUSTOM.test(tx(a));
+const isOfficial = (a: { title?: string; author?: string }) => OFFICIAL.test(tx(a)) && !isCustom(a);
+/** Не авторы: метки источника, сборки, техника. */
+const NOT_AUTHOR = new RegExp(`${OFFICIAL.source}|${CUSTOM.source}|atmos|\\brus\\b|\\bdub\\b`, 'i');
+const realAuthor = (a?: string) => (a && !NOT_AUTHOR.test(a) && normAuthor(a).length > 2 ? normAuthor(a) : undefined);
 function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherOfficialNonDub?: boolean } = {}): DubInfo {
   const rus = s.audio.filter(a => a.lang === 'rus');
   // официальная дорожка у второй стороны подписана не как дубляж -> здешний «Dub, Licence» — та же дорожка, тип подписи не доверяем
@@ -61,8 +69,11 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
   if (dubs.length) {
     const ll = dubs.filter(a => a.lossless);
     const best = ll[0] ?? dubs[0];
-    return { state: ll.length ? 'lossless' : 'lossy', label: `${best.codec ?? '?'} ${best.channels ?? '?'}ch${best.author ? ' (' + best.author + ')' : ''}`,
-      authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)) };
+    const lbl = (a: typeof best) => `${a.codec ?? '?'} ${a.channels ?? '?'}ch${a.author ? ' (' + a.author + ')' : ''}`;
+    const off = dubs.filter(isOfficial).sort((x, y) => codecRank(y) - codecRank(x))[0];
+    return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best),
+      authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)),
+      offRank: off ? codecRank(off) : undefined, offLabel: off ? lbl(off) : undefined, bestCustom: isCustom(best) };
   }
   if (opts.ext) return { state: 'unknown', label: 'внешняя дорожка (RUS ext)', authors: [] };
   if (opts.claims || rus.some(a => a.kind === 'unknown')) return { state: 'unknown', label: 'не распознан', authors: [] };
@@ -71,8 +82,6 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
 const dubRankOf = (s: DubState) => (s === 'lossless' ? 2 : s === 'lossy' ? 1 : 0);
 
 // ---------- оригинал ----------
-const codecRank = (a: { codec?: string; lossless?: boolean }) =>
-  a.lossless ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
 function bestOriginal(s: ReleaseSpec, origLang?: string) {
   const o = origLang === 'rus'
     ? s.audio.filter(a => a.lang === 'rus')                                     // русский фильм: оригинал — русская дорожка
@@ -138,6 +147,9 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if (fr.localized_video !== false && cand.video.localized) flags.push('локализованный видеоряд');
   if (candExt) flags.push('русская дорожка внешняя (не внутри mkv)');
   if (!ruOriginal && cur.state === 'lossless' && cnd.state === 'lossy') flags.push(`дубляж lossless → lossy (${cur.label} → ${cnd.label})`);
+  if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestCustom) flags.push(`дубляж лучше за счёт любительской сборки (${cnd.label})`);
+  if (!ruOriginal && cur.offRank !== undefined && cnd.offRank !== undefined && cnd.offRank < cur.offRank)
+    flags.push(`официальный дубляж хуже (${cur.offLabel} → ${cnd.offLabel})`);
   if (!ruOriginal && cur.authors.length && cnd.authors.length) {
     const cAuth = cnd.authors;
     const same = cur.authors.some(a => cAuth.some(b => a.includes(b) || b.includes(a)));
