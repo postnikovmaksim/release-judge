@@ -5,6 +5,7 @@ import { judgeTopic, type JudgeResult } from './judge/service.js';
 import { trackerFor } from './trackers/registry.js';
 import { sendMovieCard, sendText } from './telegram.js';
 import { currentTopicUrl } from './currentTopic.js';
+import { parseTopic } from './topic.js';
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 // Отклонения Radarr, которые означают «не апгрейд по мнению Radarr» — именно такие кандидаты нам и нужны
@@ -44,9 +45,12 @@ export async function checkMovie(m: any, log: (s: string) => void, stats: Discov
   stats.candidates += cands.length;
 
   const results: JudgeResult[] = [];
+  const curUrl = cands.length ? await currentTopicUrl(m.movieFile.path) : undefined;
+  let currentTopicTitle: string | undefined;
+  if (curUrl) try { currentTopicTitle = (await parseTopic(curUrl)).title; } catch { /* текущая раздача недоступна — не критично */ }
   for (const r of cands) {
     try {
-      const j = await judgeTopic(m.id, r.infoUrl, { guid: r.guid, indexerId: r.indexerId, releaseTitle: r.title, indexer: r.indexer, movie: m, force });
+      const j = await judgeTopic(m.id, r.infoUrl, { guid: r.guid, indexerId: r.indexerId, releaseTitle: r.title, indexer: r.indexer, movie: m, force, currentTopicTitle });
       stats.judged++;
       if (j.verdict === 'UPGRADE') stats.upgrade++;
       if (j.verdict === 'REVIEW') stats.review++;
@@ -57,7 +61,6 @@ export async function checkMovie(m: any, log: (s: string) => void, stats: Discov
   if (results.length) {
     results.sort((a, b) => (a.verdict === 'UPGRADE' ? -1 : 1) - (b.verdict === 'UPGRADE' ? -1 : 1));
     const tracker = m.movieFile.releaseGroup ? ` · ${m.movieFile.releaseGroup}` : '';
-    const curUrl = await currentTopicUrl(m.movieFile.path);
     await sendMovieCard(m.id, `${m.title} (${m.year})`, `${m.movieFile.quality?.quality?.name ?? ''} ${results[0].currentLabel ?? ''}${tracker}`, results, curUrl);
   }
 }

@@ -23,7 +23,9 @@ export async function sendMovieCard(movieId: number, title: string, currentLine:
   const lines = [`🎬 <b>${esc(title)}</b>`, `Сейчас: ${cur}`, ''];
   items.forEach((it, i) => {
     lines.push(`${ICON[it.verdict]} <b>#${i + 1} ${it.verdict}</b> — <a href="${esc(it.topicUrl)}">${esc(it.candidateTitle.slice(0, 120))}</a>`);
-    it.reasons.forEach(r => lines.push(`   • ${esc(r)}`));
+    const block = (label: string, xs?: string[]) => { if (xs?.length) lines.push(`   <b>${label}:</b> ${esc(xs.join("; "))}`); };
+    block("Почему", it.why); block("Минусы", it.cons); block("Проверить", it.check);
+    if (!it.why?.length && !it.cons?.length && !it.check?.length) it.reasons.forEach(r => lines.push(`   • ${esc(r)}`));
     lines.push('');
   });
   const mode = kvGet('actions_mode') ?? 'report';

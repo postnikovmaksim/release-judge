@@ -42,7 +42,7 @@ test('редакция: файл Extended, кандидат Theatrical -> REJECT
 test('редакция: кандидат длиннее -> REVIEW даже при худшем видео', () => {
   const j = judge(rt(), other(thd()), rules, { currentEditionText: 'Movie (2001)', candidateEditionText: 'Movie [Extended Edition]' });
   assert.equal(j.verdict, 'REVIEW');
-  assert.match(j.reasons[0], /длинная редакция/);
+  assert.ok(j.why?.some(w => /редакция/.test(w)));
 });
 test('дубляж lossless -> lossy -> REVIEW', () => {
   const cur = thd(); cur.audio[0].lossless = true; cur.audio[0].codec = 'DTS-HD MA';
@@ -88,4 +88,29 @@ test('сводка RuTor: дорожки достраиваются', () => {
   const c = rt(); c.audio = [];
   fillFromSummary(c, audioSummary('Аудио 1: Русский 48 kHz, AC3, 6 ch 448 Kbps - Дубляж\nАудио 6: Английский 48 kHz, DTS-X MA, 8ch - Оригинал'));
   assert.deepEqual(c.audio.map(a => `${a.lang}/${a.kind}`), ['rus/dub', 'eng/original']);
+});
+
+const aud = (xs: [string, string, string?, string?, boolean?][]) => xs.map(([lang, kind, author, codec = 'AC3', lossless = false]) =>
+  ({ lang, kind, author, title: `${kind} ${author ?? ''}`, codec, lossless, channels: 6 }));
+const base = (audio: any[], uid: string): ReleaseSpec => ({ video: { hdr: ['hdr10'], height: 2160, width: 3840, localized: false, upscale: false },
+  subs: [], confidence: 1, uniqueId: uid, audio: [...audio, { lang: 'eng', kind: 'original', codec: 'TrueHD', lossless: true, channels: 8 }] } as any);
+
+test('Конклав: тот же дубляж, студия не подписана у кандидата -> KEEP (флаги без выигрыша не повод)', () => {
+  const j = judge(base(aud([['rus', 'dub', 'Пифагор', 'EAC3']]), 'a'), base(aud([['rus', 'dub', undefined, 'AC3'], ['rus', 'dub', undefined, 'EAC3']]), 'b'), rules, {});
+  assert.equal(j.verdict, 'KEEP');
+});
+test('Индиана: «Dub, Licence» у кандидата = официальная MVO у файла -> не выигрыш по дубляжу', () => {
+  const cur = base([{ lang: 'rus', kind: 'mvo', author: 'UHD', title: 'Многоголосый закадровый, UHD-BD', codec: 'DTS-HD MA', lossless: true, channels: 2 }], 'a');
+  const cnd = base([{ lang: 'rus', kind: 'dub', author: 'Licence', title: 'Dub, Licence', codec: 'AC3', channels: 2 }], 'b');
+  assert.equal(judge(cur, cnd, rules, {}).verdict, 'KEEP');
+});
+test('Серенити: дубляж lossy -> lossless = выигрыш, метки Amazon/ATMOS не студии', () => {
+  const j = judge(base(aud([['rus', 'dub', 'Amazon', 'EAC3']]), 'a'), base(aud([['rus', 'dub', 'ATMOS)', 'DTS-HD MA', true]]), 'b'), rules, {});
+  assert.equal(j.verdict, 'UPGRADE');
+  assert.ok(j.why?.some(w => /дубляж/.test(w)));
+});
+test('разные реальные студии при выигрыше -> REVIEW с «Проверить»', () => {
+  const j = judge(base(aud([['rus', 'dub', 'Невафильм']]), 'a'), { ...base(aud([['rus', 'dub', 'Пифагор', 'DTS-HD MA', true]]), 'b') }, rules, {});
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.check?.some(c => /студия/.test(c)));
 });

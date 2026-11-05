@@ -11,7 +11,7 @@ const saveVerdict = db.prepare(`INSERT INTO verdict (movie_id, topic_url, guid, 
   VALUES (@movie_id, @topic_url, @guid, @indexer_id, @verdict, @reasons, 'auto', @release_title, @indexer)`);
 
 export interface JudgeResult extends Judgement { id: number; movieId: number; title: string; topicUrl: string; candidateTitle: string; currentLabel?: string; }
-export interface JudgeOpts { force?: boolean; guid?: string; indexerId?: number; releaseTitle?: string; indexer?: string; movie?: any; }
+export interface JudgeOpts { force?: boolean; guid?: string; indexerId?: number; releaseTitle?: string; indexer?: string; movie?: any; currentTopicTitle?: string; }
 
 export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts = {}): Promise<JudgeResult> {
   const row = fileSpec.get(movieId) as any;
@@ -26,7 +26,7 @@ export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts =
     originalLang: movie.originalLanguage?.name ? normLang(movie.originalLanguage.name) : undefined,
     currentTracker: mf.releaseGroup ?? undefined,
     candidateTracker: topic.tracker,
-    currentEditionText: [current.video.source, mf.edition, mf.relativePath, mf.originalFilePath, mf.sceneName].filter(Boolean).join(' '),
+    currentEditionText: [current.video.source, mf.edition, mf.relativePath, mf.originalFilePath, mf.sceneName, opts.currentTopicTitle].filter(Boolean).join(' '),
     candidateEditionText: [topic.title, opts.releaseTitle].filter(Boolean).join(' '),
     candidateTitle: [opts.releaseTitle, topic.title].filter(Boolean).join(' '),
   });

@@ -2,7 +2,7 @@ import type { ReleaseSpec } from '../spec/schema.js';
 
 export type Verdict = 'UPGRADE' | 'KEEP' | 'REVIEW' | 'REJECT';
 export interface Dim { dim: string; current: string; candidate: string; cmp: -1 | 0 | 1; }   // cmp: 1 = кандидат лучше
-export interface Judgement { verdict: Verdict; reasons: string[]; dims: Dim[]; }
+export interface Judgement { verdict: Verdict; reasons: string[]; dims: Dim[]; why?: string[]; cons?: string[]; check?: string[]; }
 
 export interface Rules {
   trackers?: { priority?: string[] };
@@ -50,14 +50,19 @@ const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычн�
 type DubState = 'none' | 'unknown' | 'lossy' | 'lossless';
 interface DubInfo { state: DubState; label: string; authors: string[]; }
 const normAuthor = (a: string) => a.toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
-function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean } = {}): DubInfo {
+/** Метки источника, а не студии: официальная дорожка с диска/стриминга одинакова во всех раздачах. */
+export const OFFICIAL = /licen[cs]e|лицензи|uhd-?bd|blu-?ray|\bbd\b|\bdvd\b|itunes|netflix|amazon|disney|apple\s*tv|okko|кинопоиск|\bivi\b|\bcee\b|\beur\b|\busa\b|custom|atmos|\brus\b/i;
+const isOfficial = (a: { title?: string; author?: string }) => OFFICIAL.test(`${a.title ?? ''} ${a.author ?? ''}`);
+const realAuthor = (a?: string) => (a && !OFFICIAL.test(a) && normAuthor(a).length > 2 ? normAuthor(a) : undefined);
+function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherOfficialNonDub?: boolean } = {}): DubInfo {
   const rus = s.audio.filter(a => a.lang === 'rus');
-  const dubs = rus.filter(a => a.kind === 'dub');
+  // официальная дорожка у второй стороны подписана не как дубляж -> здешний «Dub, Licence» — та же дорожка, тип подписи не доверяем
+  const dubs = rus.filter(a => a.kind === 'dub' && !(opts.otherOfficialNonDub && isOfficial(a) && !realAuthor(a.author)));
   if (dubs.length) {
     const ll = dubs.filter(a => a.lossless);
     const best = ll[0] ?? dubs[0];
     return { state: ll.length ? 'lossless' : 'lossy', label: `${best.codec ?? '?'} ${best.channels ?? '?'}ch${best.author ? ' (' + best.author + ')' : ''}`,
-      authors: dubs.map(a => a.author).filter((x): x is string => Boolean(x)).map(normAuthor).filter(Boolean) };
+      authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)) };
   }
   if (opts.ext) return { state: 'unknown', label: 'внешняя дорожка (RUS ext)', authors: [] };
   if (opts.claims || rus.some(a => a.kind === 'unknown')) return { state: 'unknown', label: 'не распознан', authors: [] };
@@ -91,7 +96,9 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   const title = ctx.candidateTitle ?? '';
   const candExt = /RUS\s*\(ext\)|внешн\w* (дорожк|звук)/i.test(title) && !cand.audio.some(a => a.lang === 'rus');
   const candClaims = /\bDub\b|дубляж|дублир|[|,]\s*D\s*(?:[,|]|$)/i.test(title);
-  const cur = dubInfo(current), cnd = dubInfo(cand, { claims: candClaims, ext: candExt });
+  const offNonDub = (x: ReleaseSpec) => x.audio.some(a => a.lang === 'rus' && a.kind !== 'dub' && isOfficial(a));
+  const cur = dubInfo(current, { otherOfficialNonDub: offNonDub(cand) });
+  const cnd = dubInfo(cand, { claims: candClaims, ext: candExt, otherOfficialNonDub: offNonDub(current) });
   const curEd = editionRank(ctx.currentEditionText), cndEd = editionRank(ctx.candidateEditionText);
   const prio = rules.trackers?.priority ?? ['TeamHD', 'Tapochek'];
   const orig = { c: bestOriginal(current, ctx.originalLang), n: bestOriginal(cand, ctx.originalLang) };
@@ -128,11 +135,10 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
 
   // 3) флаги на ручную проверку
   const flags: string[] = [];
-  if (cndEd > curEd) flags.push(`более длинная редакция: ${all.edition.current} → ${all.edition.candidate}`);
   if (fr.localized_video !== false && cand.video.localized) flags.push('локализованный видеоряд');
   if (candExt) flags.push('русская дорожка внешняя (не внутри mkv)');
   if (!ruOriginal && cur.state === 'lossless' && cnd.state === 'lossy') flags.push(`дубляж lossless → lossy (${cur.label} → ${cnd.label})`);
-  if (!ruOriginal && cur.authors.length && (cnd.state === 'lossy' || cnd.state === 'lossless')) {
+  if (!ruOriginal && cur.authors.length && cnd.authors.length) {
     const cAuth = cnd.authors;
     const same = cur.authors.some(a => cAuth.some(b => a.includes(b) || b.includes(a)));
     if (!same) flags.push(`другая студия дубляжа (${cur.label} → ${cnd.label})`);
@@ -144,16 +150,20 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
       if (hasCult(current, re) && !hasCult(cand, re)) flags.push(`пропадает перевод: ${c.name}`);
     }
 
-  // 4) первое отличие решает; более длинная редакция — всегда REVIEW
+  // 4) решение
+  const fmt = (d: Dim) => `${d.dim}: ${d.current} → ${d.candidate}`;
+  const wins = dims.filter(d => d.cmp > 0 && d !== all.tracker).map(fmt);
+  const cons = dims.filter(d => d.cmp < 0 && d !== all.tracker).map(fmt);
+  const check = flags.filter(f => !/более длинная редакция/.test(f));
+  const out = (verdict: Verdict, reasons: string[]): Judgement => ({ verdict, reasons, dims, why: wins, cons, check });
+  if (cndEd > curEd) return out('REVIEW', [...flags, ...wins.map(w => 'лучше — ' + w), ...cons.map(c => 'хуже — ' + c)]);
   const first = dims.find(d => d.cmp !== 0);
-  if (cndEd > curEd) {
-    const rest = dims.filter(d => d !== all.edition && d.cmp !== 0 && d !== all.tracker).map(d => `${d.cmp > 0 ? 'лучше' : 'хуже'} — ${d.dim}: ${d.current} → ${d.candidate}`);
-    return { verdict: 'REVIEW', reasons: [...flags, ...rest], dims };
+  if (!first) return out('KEEP', ['равноценно']);                                   // флаги без выигрыша не повод
+  if (first.cmp < 0) return out('KEEP', [`хуже: ${first.dim} (${first.candidate} < ${first.current})`]);
+  if (first === all.tracker) {                                                        // выигрыш только трекером
+    return check.length ? out('KEEP', ['лучше только трекер, но есть что проверить: ' + check.join('; ')]) : out('UPGRADE', ['лучше: трекер (' + fmt(first) + ')']);
   }
-  if (!first) return { verdict: flags.length ? 'REVIEW' : 'KEEP', reasons: flags.length ? flags : ['равноценно'], dims };
-  if (first.cmp < 0) return { verdict: 'KEEP', reasons: [`хуже: ${first.dim} (${first.candidate} < ${first.current})`], dims };
-  const losses = dims.filter(d => d.cmp < 0 && d !== all.tracker).map(d => `${d.dim}: ${d.current} → ${d.candidate}`);
-  const win = `лучше: ${first.dim} (${first.current} → ${first.candidate})`;
-  if (flags.length || losses.length) return { verdict: 'REVIEW', reasons: [win, ...flags, ...losses.map(l => 'потеря — ' + l)], dims };
-  return { verdict: 'UPGRADE', reasons: [win], dims };
+  const win = `лучше: ${fmt(first)}`;
+  if (check.length || cons.length) return out('REVIEW', [win, ...check, ...cons.map(c => 'потеря — ' + c)]);
+  return out('UPGRADE', [win]);
 }
