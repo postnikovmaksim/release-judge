@@ -15,12 +15,13 @@ import { fetchPage, fetchBinary } from '../trackers/fetchPage.js';
 import { trackerFor } from '../trackers/registry.js';
 import { parseTorrent, type TorrentMeta } from '../torrent/bencode.js';
 import { qb, sonarr } from './clients.js';
-import { isUnregistered, pickDownloadLink, diffFiles, kindOf, strategy, fmtSize, sameFile, planTvImport, type LibEp, type FileDiff, type Kind } from './plan.js';
+import { isUnregistered, pickDownloadLink, diffFiles, kindOf, strategy, fmtSize, sameFile, planTvImport, type LibEp, type TvMap, type FileDiff, type Kind } from './plan.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS refresh_job (
   old_hash TEXT PRIMARY KEY, instance TEXT, name TEXT, category TEXT, kind TEXT, topic_url TEXT,
   new_hash TEXT, strategy TEXT, save_path TEXT, movie_id INTEGER, diff TEXT,
   status TEXT, error TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`);
+try { db.exec('ALTER TABLE refresh_job ADD COLUMN tv_map TEXT'); } catch { }
 const upd = (h: string, f: Record<string, any>) => {
   const keys = Object.keys(f);
   db.prepare(`UPDATE refresh_job SET ${keys.map(k => `${k} = @${k}`).join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE old_hash = @h`).run({ ...f, h });
@@ -73,7 +74,7 @@ async function findMovieId(contentPath: string): Promise<number | undefined> {
   return undefined;
 }
 
-export interface PlanItem { candidate: Candidate; newHash?: string; strategy?: 'same_path' | 'new_path'; diff?: FileDiff; movieId?: number; note: string; }
+export interface PlanItem { candidate: Candidate; newHash?: string; strategy?: 'same_path' | 'new_path'; diff?: FileDiff; movieId?: number; tvMap?: TvMap; note: string; }
 
 /** Разобрать кандидата без действий (для /refresh/plan и как первый шаг run). */
 export async function analyse(c: Candidate): Promise<PlanItem & { _buf?: Buffer; _meta?: TorrentMeta; _magnet?: string }> {
@@ -92,7 +93,12 @@ export async function analyse(c: Candidate): Promise<PlanItem & { _buf?: Buffer;
     : diff.identical ? 'файлы те же — только перепроверка'
     : shared ? `файл заменён (${fmtSize(meta.totalSize)}); его раздаёт ещё ${shared} — качаю рядом и импортирую в Radarr`
     : `файл заменён (${fmtSize(meta.totalSize)}) — докачиваю на месте`;
-  return { candidate: c, newHash: meta.infoHash, strategy: st, diff, movieId, note, _buf: n.buf, _meta: meta };
+  // сериал определяем ДО докачки — по файлам старой раздачи (их копии лежат в библиотеке); после перезаписи сопоставлять будет не с чем
+  let tvMap: TvMap | undefined;
+  if (c.kind === 'tv') {
+    try { const p = planTvImport(files.map(f => ({ path: f.name, size: f.size })), await sonarrLibrary()); if (p) tvMap = { seriesId: p.seriesId, seasonNumber: p.seasonNumber, offset: p.offset }; } catch { }
+  }
+  return { candidate: c, newHash: meta.infoHash, strategy: st, diff, movieId, tvMap, note: note + (c.kind === 'tv' && !tvMap ? '; сериал в Sonarr не определён' : ''), _buf: n.buf, _meta: meta };
 }
 
 const exists = async (hash: string) => {
@@ -132,7 +138,7 @@ async function start(c: Candidate, log: (m: string) => void) {
     await makeWritable(c.instance, h);   // старые файлы бывают nobody:users 644 — qBit (PUID 1000) не сможет дописать: Permission denied
     await qb(c.instance, '/torrents/recheck', { hashes: h });
   }
-  upd(c.hash, { new_hash: h ?? null, strategy: a.strategy, save_path: savePath, status: a.strategy === 'same_path' ? 'checking' : 'downloading', error: null, diff: JSON.stringify(a.diff ?? null), movie_id: a.movieId ?? null });
+  upd(c.hash, { new_hash: h ?? null, strategy: a.strategy, save_path: savePath, status: a.strategy === 'same_path' ? 'checking' : 'downloading', error: null, diff: JSON.stringify(a.diff ?? null), movie_id: a.movieId ?? null, tv_map: a.tvMap ? JSON.stringify(a.tvMap) : null });
   log(`refresh: ${c.name} → ${a.strategy} (${a.note})`);
   await sendText(`🔄 <b>Раздача обновлена</b>: ${esc(c.name)}\n${a.note}\n<a href="${c.topicUrl}">${c.tracker}</a>`);
 }
@@ -292,11 +298,12 @@ async function sonarrLibrary(): Promise<LibEp[]> {
  * Импорт докачанных серий. Sonarr сам не узнаёт раздачи с японскими названиями («Unknown Series»), поэтому
  * сериал/сезон/сдвиг номеров определяем по неизменённым сериям (точный размер), новые и изменённые — ManualImport.
  */
-async function importTv(j: any, t: any): Promise<{ ok: boolean; text: string }> {
+async function importTv(j: any, t: any, override?: TvMap): Promise<{ ok: boolean; text: string }> {
   try {
     const files = (await qb(j.instance, `/torrents/files?hash=${j.new_hash}`) as any[]).map(f => ({ path: join(t.save_path, f.name), size: f.size }));
     const lib = await sonarrLibrary();
-    const p = planTvImport(files, lib);
+    const known: TvMap | undefined = override ?? (j.tv_map ? JSON.parse(j.tv_map) : undefined);
+    const p = planTvImport(files, lib, known);
     if (!p) {
       await sonarr('/command', { method: 'POST', body: JSON.stringify({ name: 'DownloadedEpisodesScan', path: t.content_path, importMode: 'Copy' }) });
       return { ok: false, text: 'не нашёл сериал по уже импортированным сериям — отдал Sonarr на авто-импорт, проверь Activity → Queue' };
@@ -318,12 +325,12 @@ async function importTv(j: any, t: any): Promise<{ ok: boolean; text: string }> 
 }
 
 /** Ручной повтор импорта для уже завершённой работы (POST /refresh/import/:hash). */
-export async function reimportTv(oldHash: string) {
+export async function reimportTv(oldHash: string, override?: TvMap) {
   const j = db.prepare('SELECT * FROM refresh_job WHERE old_hash = ?').get(oldHash) as any;
   if (!j || j.kind !== 'tv') throw new Error('нет такой работы по сериалу');
   const [t] = await qb(j.instance, `/torrents/info?hashes=${j.new_hash}`) as any[];
   if (!t) throw new Error('новый торрент не найден в qBit');
-  return importTv(j, t);
+  return importTv(j, t, override);
 }
 
 /** Файлы, которые новая раздача будет дописывать на месте, — rw для всех (стандарт Unraid 666). Hardlink в библиотеке — тот же inode, ему это не мешает. */

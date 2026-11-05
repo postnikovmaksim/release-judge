@@ -65,7 +65,10 @@ app.post('/discovery/run', async (req) => {
 app.get('/refresh/plan', async () => runRefresh(m => app.log.info(m), { dryRun: true }));
 app.post('/refresh/run', async () => runRefresh(m => app.log.info(m)));
 app.get('/refresh/jobs', async () => jobs());
-app.post('/refresh/import/:hash', async (req) => reimportTv((req.params as any).hash));
+app.post('/refresh/import/:hash', async (req) => {   // body (необязательно): { seriesId, seasonNumber, offset } — если сериал не определился сам
+  const b = (req.body ?? {}) as any;
+  return reimportTv((req.params as any).hash, b.seriesId ? { seriesId: +b.seriesId, seasonNumber: +b.seasonNumber, offset: +(b.offset ?? 0) } : undefined);
+});
 app.post('/telegram/test', async () => { await sendText('✅ release-judge подключён к боту'); return { ok: true }; });
 
 app.post('/ignore/import', async (req) => {         // перенос игнор-листа (например, media_skip из n8n)

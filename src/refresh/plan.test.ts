@@ -104,3 +104,13 @@ test('[11-05 вечер] Sonarr не узнаёт японские назван�
   assert.deepEqual(p.targets.map(t => t.episodeNumber), [2, 3, 4, 5]);   // 02–04 изменены, 05 новая; 01 тот же — не трогаем
   assert.equal(planTvImport(files, []), undefined);                      // ни одного совпадения — не угадываем
 });
+
+test('[11-06] Cyberpunk Edgerunners 2: все серии изменены — сериал определён заранее по старой раздаче, импортируем все новые версии', async () => {
+  const { planTvImport } = await import('./plan.js');
+  const lib = [1, 2, 3].map(n => ({ seriesId: 106, seasonNumber: 2, episodeNumber: n, size: 2.5e9 + n, quality: {}, languages: [] }));
+  const d = 'Cyberpunk Edgerunners 2 [2160p WEB-DL DV HDR10]/';
+  const files = [1, 2, 3].map(n => ({ path: `${d}Cyberpunk Edgerunners 2 - 0${n} [2160p WEB-DL DV HDR10].mkv`, size: 2.7e9 + n }));
+  assert.equal(planTvImport(files, lib), undefined);                                   // по новым файлам — не с чем сопоставить
+  const p = planTvImport(files, lib, { seriesId: 106, seasonNumber: 2, offset: 0 })!;   // карта со старой раздачи
+  assert.deepEqual(p.targets.map(x => x.episodeNumber), [1, 2, 3]);
+});

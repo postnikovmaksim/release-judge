@@ -83,7 +83,15 @@ export interface TvImportPlan { seriesId: number; seasonNumber: number; offset: 
  * (импорт мог быть копией, не hardlink) — отсюда сериал, сезон и сдвиг «номер в имени → номер серии».
  * Импортируем всё, чего в библиотеке нет с тем же размером: новые и изменённые серии.
  */
-export function planTvImport(files: { path: string; size: number }[], lib: LibEp[]): TvImportPlan | undefined {
+export interface TvMap { seriesId: number; seasonNumber: number; offset: number; }
+export function planTvImport(files: { path: string; size: number }[], lib: LibEp[], known?: TvMap): TvImportPlan | undefined {
+  if (known) {   // сериал определён заранее (по файлам старой раздачи) — импортируем всё, чего нет в библиотеке с тем же размером
+    const have = new Set(lib.filter(e => e.seriesId === known.seriesId).map(e => e.size));
+    const targets = files.filter(f => /\.(mkv|mp4|avi|m4v|ts)$/i.test(f.path) && !have.has(f.size))
+      .map(f => ({ path: f.path, n: parseEpisodeNumber(f.path) })).filter(x => x.n !== undefined)
+      .map(x => ({ path: x.path, episodeNumber: x.n! + known.offset }));
+    return { ...known, matched: 0, targets };
+  }
   const bySize = new Map<number, LibEp>();
   for (const e of lib) if (e.size > 50e6) bySize.set(e.size, e);
   const pairs: { n: number; e: LibEp }[] = [];
