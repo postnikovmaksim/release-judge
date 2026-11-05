@@ -1,6 +1,6 @@
 /**
  * Обновлённые раздачи: трекер отвечает «torrent not registered» → берём новый .torrent со страницы темы и докачиваем.
- * Сериалы: тот же путь, перепроверка, импорт новых серий в Sonarr, старый торрент удаляется без данных.
+ * Сериалы: тот же путь, перепроверка, изменённые и новые серии докачиваются на месте, импорт в Sonarr, старый торрент удаляется без данных.
  * Фильмы: тот же путь, докачка прямо в файл (hardlink библиотеки обновится), потом Radarr перечитывает файл.
  *   Если файл раздаёт ещё один торрент (cross-seed) — отдельная папка `_refresh`, импорт через Radarr, старый торрент удаляется с данными.
  */
@@ -122,13 +122,7 @@ async function start(c: Candidate, log: (m: string) => void) {
   if (h && a.strategy === 'same_path') {
     await new Promise(r => setTimeout(r, 3000));
     if (!(await qb(c.instance, `/torrents/info?hashes=${h}`) as any[]).length) throw new Error('qBit не добавил новый торрент');
-    // изменённые серии: старый файл отодвигаем (.old) — только после того, как новый торрент точно добавлен (он стоит на паузе),
-    // иначе докачка писала бы прямо в hardlink библиотеки
-    if (c.kind === 'tv' && a.diff?.changed.length)
-      for (const p of a.diff.changed) {
-        const full = a.diff.oldRoot ? `${a.diff.oldRoot}/${p}` : p;
-        await qb(c.instance, '/torrents/renameFile', { hash: c.hash, oldPath: full, newPath: full + '.old' });
-      }
+    // изменённые серии докачиваются прямо в файл (решение Максима 2026-11-05): Sonarr после докачки сам импортирует и заменит файл в media
     if (a.diff?.oldRoot && a.diff.newRoot && a.diff.oldRoot !== a.diff.newRoot)
       await qb(c.instance, '/torrents/renameFolder', { hash: h, oldPath: a.diff.newRoot, newPath: a.diff.oldRoot });
     if (a._meta && !a._meta.multiFile) {

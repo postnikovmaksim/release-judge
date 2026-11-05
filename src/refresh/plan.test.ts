@@ -49,7 +49,7 @@ test('[11-05] сериал: добавились серии, корень пер
   assert.equal(strategy('tv', d), 'same_path');
 });
 
-test('[11-05] сериал с заменённой серией — всё равно тот же путь (старый файл отодвигается в .old)', () => {
+test('[11-05] сериал с заменённой серией — тот же путь, докачка на месте, Sonarr переимпортирует (без .old)', () => {
   const d = diffFiles([{ name: 'S/E01.mkv', size: 100 }], parseTorrent(multi('S', [['E01.mkv', 150]]).buf), true);
   assert.deepEqual(d.changed, ['E01.mkv']);
   assert.equal(strategy('tv', d), 'same_path');
