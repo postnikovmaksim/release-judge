@@ -37,6 +37,7 @@ export const ReleaseSpec = z.object({
   uniqueId: z.string().optional(),                    // MediaInfo General Unique ID — совпадает у файла и дампа той же раздачи
   edition: z.string().optional(),
   sizeBytes: z.number().optional(),
+  durationSec: z.number().optional(),                 // длительность фильма — главный признак редакции
   tracker: z.string().optional(),
   topicUrl: z.string().optional(),
   confidence: z.number().min(0).max(1).default(1),    // уверенность парсера (LLM < 1)

@@ -1,5 +1,5 @@
 import type { ReleaseSpec } from './schema.js';
-import { fillFromSummary } from './fromMediainfo.js';
+import { fillFromSummary, parseDuration } from './fromMediainfo.js';
 import { audioSummary } from './descFlags.js';
 
 /** Раздача без MediaInfo/BDInfo: видео — из названия и строки «Видео:», дорожки — из «Аудио N:». Низкая уверенность. */
@@ -19,6 +19,7 @@ export function specFromSummary(title: string, description: string): ReleaseSpec
       localized: false, upscale: false },
     audio: [], subs: /Субтитры:.*(рус|russian)/i.test(description) ? [{ lang: 'rus', kind: 'full' }] : [],
     confidence: 0.5,
+    durationSec: parseDuration(description.match(/(?:Продолжительность|Длительность|Duration|Время)\s*:\s*([^\n]{4,30})/i)?.[1]),
   };
   fillFromSummary(spec, sum);
   return spec.audio.length ? spec : undefined;

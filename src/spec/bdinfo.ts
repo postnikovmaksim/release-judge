@@ -16,6 +16,8 @@ export function parseBdinfo(text: string): Track[] {
     const sec = l.trim().match(/^(VIDEO|AUDIO|SUBTITLES|FILES|CHAPTERS|STREAM DIAGNOSTICS|PLAYLIST REPORT|DISC INFO):?\s*$/i);
     if (sec) { section = sec[1].toUpperCase(); continue; }
     if (!l.trim() || /^-{3,}|^Codec\s{2,}/.test(l.trim())) continue;
+    const len = l.match(/^\s*Length:\s*(\d+:\d{2}:\d{2}(?:\.\d+)?)/i);
+    if (len && !tracks[0].Duration) { tracks[0].Duration = len[1]; continue; }
     if (section === 'VIDEO') {
       const m = l.match(/^(\*\s*)?(.+?Video)\s+([\d,.]+)\s*kbps\s+(.*)$/i);
       if (!m) continue;

@@ -68,6 +68,7 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
     },
     audio, subs,
     sizeBytes: num(g.FileSize),
+    durationSec: parseDuration(g.Duration ?? v.Duration),
     uniqueId: g.UniqueID ? String(g.UniqueID).split(/\s/)[0] : undefined,
     confidence: 1,
   };
@@ -117,4 +118,16 @@ export function applyTitleDub(spec: ReleaseSpec, claims: boolean) {
   if (!claims || spec.audio.some(a => a.lang === 'rus' && a.kind === 'dub')) return;
   const t = spec.audio.find(a => a.lang === 'rus' && a.kind === 'unknown');
   if (t) { t.kind = 'dub'; t.author = t.author ?? extractAuthor(t.title?.replace(/[|]/g, '')); }
+}
+
+/** «6796.792» (JSON, сек) | «01:53:16.792» | «1 h 53 min» | «1 ч. 53 мин.» → секунды. */
+export function parseDuration(v?: string | number): number | undefined {
+  if (v === undefined || v === null || v === '') return undefined;
+  const s = String(v).trim();
+  if (/^\d+(\.\d+)?$/.test(s)) return Math.round(+s);
+  const hms = s.match(/^(\d{1,2}):(\d{2}):(\d{2})(?:[.,]\d+)?/);
+  if (hms) return +hms[1] * 3600 + +hms[2] * 60 + +hms[3];
+  const h = s.match(/(\d+)\s*(?:h|ч)/i)?.[1], m = s.match(/(\d+)\s*(?:min|mn|мин)/i)?.[1], sec = s.match(/(\d+)\s*(?:s|с)(?![a-zа-яё])/i)?.[1];
+  if (!h && !m) return undefined;
+  return +(h ?? 0) * 3600 + +(m ?? 0) * 60 + +(sec ?? 0);
 }

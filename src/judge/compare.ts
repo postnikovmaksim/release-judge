@@ -43,6 +43,9 @@ const videoLabel = (s: ReleaseSpec) => {
 
 // ---------- редакция: длиннее = лучше ----------
 const LONG_EDITION = /extended|расширенн|director'?s|режисс[её]рск|uncut|unrated|ultimate|полная верси|без цензуры/i;
+/** Разница длительности, начиная с которой это другая редакция (MediaInfo в тексте округляет до минуты). */
+export const EDITION_SAME_SEC = 180;
+const fmtDur = (s: number) => `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}`;
 export const editionRank = (t?: string) => (t && LONG_EDITION.test(t) ? 1 : 0);
 const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычная';
 
@@ -108,12 +111,16 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   const offNonDub = (x: ReleaseSpec) => x.audio.some(a => a.lang === 'rus' && a.kind !== 'dub' && isOfficial(a));
   const cur = dubInfo(current, { otherOfficialNonDub: offNonDub(cand) });
   const cnd = dubInfo(cand, { claims: candClaims, ext: candExt, otherOfficialNonDub: offNonDub(current) });
-  const curEd = editionRank(ctx.currentEditionText), cndEd = editionRank(ctx.candidateEditionText);
+  // Редакция: если длительность известна у обоих — решает она (надпись «Ultimate»/«Extended» бывает у той же версии), иначе — текст.
+  const byDur = current.durationSec && cand.durationSec ? cand.durationSec - current.durationSec : undefined;
+  const edCmp = byDur !== undefined ? (byDur >= EDITION_SAME_SEC ? 1 : byDur <= -EDITION_SAME_SEC ? -1 : 0)
+    : cmp(editionRank(ctx.currentEditionText), editionRank(ctx.candidateEditionText));
+  const edLabel = (t: string | undefined, d?: number) => editionLabel(t) + (d ? ` · ${fmtDur(d)}` : '');
   const prio = rules.trackers?.priority ?? ['TeamHD', 'Tapochek'];
   const orig = { c: bestOriginal(current, ctx.originalLang), n: bestOriginal(cand, ctx.originalLang) };
 
   const all: Record<string, Dim> = {
-    edition: { dim: 'редакция', current: editionLabel(ctx.currentEditionText), candidate: editionLabel(ctx.candidateEditionText), cmp: cmp(curEd, cndEd) },
+    edition: { dim: 'редакция', current: edLabel(ctx.currentEditionText, current.durationSec), candidate: edLabel(ctx.candidateEditionText, cand.durationSec), cmp: edCmp },
     video: { dim: 'видео', current: videoLabel(current), candidate: videoLabel(cand), cmp: cmp(videoRank(current), videoRank(cand)) },
     russian_dub: ruOriginal ? { dim: 'русский дубляж', current: '—', candidate: '—', cmp: 0 }
       : { dim: 'русский дубляж', current: cur.label, candidate: cnd.label,
@@ -133,7 +140,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if (hr.dv_profile_5 !== false && cand.video.hdr.includes('dv') && cand.video.dvProfile === 5 && !cand.video.hdr.includes('hdr10'))
     reject.push('DV Profile 5 без HDR10-фоллбэка (не будет direct play)');
   if (hr.upscale !== false && cand.video.upscale) reject.push('апскейл');
-  if (cndEd < curEd) reject.push(`младшая редакция (${all.edition.current} → ${all.edition.candidate})`);
+  if (edCmp < 0) reject.push(`младшая редакция (${all.edition.current} → ${all.edition.candidate})`);
   if (!ruOriginal && hr.lose_russian_dub !== false && (cur.state === 'lossy' || cur.state === 'lossless') && cnd.state === 'none')
     reject.push('нет русского дубляжа, а в текущем файле он есть');
   if (reject.length) return { verdict: 'REJECT', reasons: reject, dims };
@@ -169,7 +176,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   const cons = dims.filter(d => d.cmp < 0 && d !== all.tracker).map(fmt);
   const check = flags.filter(f => !/более длинная редакция/.test(f));
   const out = (verdict: Verdict, reasons: string[]): Judgement => ({ verdict, reasons, dims, why: wins, cons, check });
-  if (cndEd > curEd) return out('REVIEW', [...flags, ...wins.map(w => 'лучше — ' + w), ...cons.map(c => 'хуже — ' + c)]);
+  if (edCmp > 0) return out('REVIEW', [...flags, ...wins.map(w => 'лучше — ' + w), ...cons.map(c => 'хуже — ' + c)]);
   const first = dims.find(d => d.cmp !== 0);
   if (!first) return out('KEEP', ['равноценно']);                                   // флаги без выигрыша не повод
   if (first.cmp < 0) return out('KEEP', [`хуже: ${first.dim} (${first.candidate} < ${first.current})`]);

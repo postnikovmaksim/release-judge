@@ -159,3 +159,15 @@ test('[11-05] Kinozal без «Аудио N:» во вкладке: дорожк
   assert.equal(s.audio[0].kind, 'mvo');
   assert.equal(s.audio[0].codec, 'AC3');
 });
+
+test('[11-05] длительность: JSON-секунды, hh:mm:ss, «3 h 17 min», «1 ч. 53 мин.», BDInfo Length', async () => {
+  const { parseDuration } = await import('./fromMediainfo.js');
+  assert.equal(parseDuration('6796.792'), 6797);
+  assert.equal(parseDuration('01:53:16.792'), 6796);
+  assert.equal(parseDuration('3 h 17 min'), 11820);
+  assert.equal(parseDuration('1 ч. 53 мин.'), 6780);
+  assert.equal(parseDuration('1 h 53 min 16 s'), 6796);
+  const { parseBdinfo } = await import('./bdinfo.js');
+  assert.equal(specFromMediainfo(parseBdinfo(fx('patriot-teamhd.bdinfo.txt'))).durationSec, 10507);
+  assert.equal(specFromMediainfo(parseMediainfoText(fx('avatar3-tapochek.mediainfo.txt'))).durationSec, 11820);
+});

@@ -14,6 +14,7 @@ const rt = (): ReleaseSpec => { const s = specFromMediainfo(parseMediainfoText(f
 const thd = (): ReleaseSpec => { const s = specFromMediainfo(parseMediainfoText(fx('twilight-thd.mediainfo.txt')));
   enrichAudio(s, audioHints('Аудио#1: Russian: DTS 5.1 |Дубляж, Пифагор|')); return s; };
 const other = (s: ReleaseSpec) => { s.uniqueId = 'other'; return s; };
+const noDur = (s: ReleaseSpec) => { s.durationSec = undefined; return s; };   // редакция по тексту — когда длительность неизвестна
 
 test('Сумерки: файл RT (DV), кандидат TeamHD (HDR10) -> KEEP', () => {
   assert.equal(judge(rt(), thd(), rules, { year: 2008, candidateTracker: 'TeamHD' }).verdict, 'KEEP');
@@ -36,11 +37,11 @@ test('HDR10+ поверх DV — лучше', () => {
   const c = other(rt()); c.video.hdr = ['dv', 'hdr10plus', 'hdr10'];
   assert.equal(judge(rt(), c, rules, {}).verdict, 'UPGRADE');
 });
-test('редакция: файл Extended, кандидат Theatrical -> REJECT', () => {
-  assert.equal(judge(thd(), other(rt()), rules, { currentEditionText: 'Two Towers Extended Edition', candidateEditionText: '[Theatrical Cut]' }).verdict, 'REJECT');
+test('редакция (длительность неизвестна): файл Extended, кандидат Theatrical -> REJECT', () => {
+  assert.equal(judge(noDur(thd()), noDur(other(rt())), rules, { currentEditionText: 'Two Towers Extended Edition', candidateEditionText: '[Theatrical Cut]' }).verdict, 'REJECT');
 });
-test('редакция: кандидат длиннее -> REVIEW даже при худшем видео', () => {
-  const j = judge(rt(), other(thd()), rules, { currentEditionText: 'Movie (2001)', candidateEditionText: 'Movie [Extended Edition]' });
+test('редакция (длительность неизвестна): кандидат длиннее -> REVIEW даже при худшем видео', () => {
+  const j = judge(noDur(rt()), noDur(other(thd())), rules, { currentEditionText: 'Movie (2001)', candidateEditionText: 'Movie [Extended Edition]' });
   assert.equal(j.verdict, 'REVIEW');
   assert.ok(j.why?.some(w => /редакция/.test(w)));
 });

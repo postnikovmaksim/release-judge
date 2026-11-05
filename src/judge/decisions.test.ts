@@ -141,3 +141,24 @@ test('[11-05] раздача без MediaInfo (разбор по кратком�
   assert.equal(j.verdict, 'REVIEW');
   assert.ok(j.check?.some(c => /MediaInfo нет/.test(c)));
 });
+
+// ---------- 2026-11-05 (редакция по длительности) ----------
+test('[11-05] Вспомнить всё: «Ultimate Rekall Edition» той же длительности (1:53) — та же редакция, не REVIEW', () => {
+  const j = v(spec(DV8, [dub()], { durationSec: 6797 }), spec(DV8, [dub()], { durationSec: 6797 - 40 }),
+    { currentEditionText: 'Total Recall 1990 UHD BDRemux', candidateEditionText: 'Total Recall [Ultimate Rekall Edition]', currentTracker: 'TeamHD', candidateTracker: 'TeamHD' });
+  assert.equal(j.dims.find(d => d.dim === 'редакция')!.cmp, 0);
+  assert.notEqual(j.verdict, 'REVIEW');
+});
+test('[11-05] Патриот: длиннее на 10 мин без пометки в названии — REVIEW (смотрим по времени)', () => {
+  const j = v(spec({}, [dub()], { durationSec: 9900 }), spec({}, [dub()], { durationSec: 10507 }));
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.why?.some(w => /редакция/.test(w)));
+});
+test('[11-05] длительность важнее надписи: кандидат «Extended», но короче на 5 мин — REJECT', () => {
+  const j = v(spec({}, [dub()], { durationSec: 9000 }), spec({}, [dub()], { durationSec: 8700 }), { candidateEditionText: '[Extended Cut]' });
+  assert.equal(j.verdict, 'REJECT');
+});
+test('[11-05] длительность неизвестна у одной стороны — редакция по тексту, как раньше', () => {
+  const j = v(spec({}, [dub()], { durationSec: 9000 }), spec({}, [dub()]), { candidateEditionText: '[Extended Cut]' });
+  assert.equal(j.verdict, 'REVIEW');
+});
