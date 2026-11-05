@@ -127,7 +127,7 @@ export function parseDuration(v?: string | number): number | undefined {
   if (/^\d+(\.\d+)?$/.test(s)) return Math.round(+s);
   const hms = s.match(/^(\d{1,2}):(\d{2}):(\d{2})(?:[.,]\d+)?/);
   if (hms) return +hms[1] * 3600 + +hms[2] * 60 + +hms[3];
-  const h = s.match(/(\d+)\s*(?:h|ч)/i)?.[1], m = s.match(/(\d+)\s*(?:min|mn|мин)/i)?.[1], sec = s.match(/(\d+)\s*(?:s|с)(?![a-zа-яё])/i)?.[1];
+  const h = s.match(/(\d+)\s*(?:h|ч)/i)?.[1], m = s.match(/(\d+)\s*(?:min|mn|мин|м(?![а-яё]))/i)?.[1], sec = s.match(/(\d+)\s*(?:s|с)(?![a-zа-яё])/i)?.[1];
   if (!h && !m) return undefined;
   return +(h ?? 0) * 3600 + +(m ?? 0) * 60 + +(sec ?? 0);
 }

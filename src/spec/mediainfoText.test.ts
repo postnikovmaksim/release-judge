@@ -166,6 +166,9 @@ test('[11-05] длительность: JSON-секунды, hh:mm:ss, «3 h 17 
   assert.equal(parseDuration('01:53:16.792'), 6796);
   assert.equal(parseDuration('3 h 17 min'), 11820);
   assert.equal(parseDuration('1 ч. 53 мин.'), 6780);
+  assert.equal(parseDuration('1 ч. 44 м.'), 6240);              // RU MediaInfo «м.» — была потеря минут (ВК 3:55 → 3:00)
+  assert.equal(parseDuration('3 ч. 55 м. 12 с.'), 14112);
+  assert.equal(parseDuration('500 мс'), undefined);
   assert.equal(parseDuration('1 h 53 min 16 s'), 6796);
   const { parseBdinfo } = await import('./bdinfo.js');
   assert.equal(specFromMediainfo(parseBdinfo(fx('patriot-teamhd.bdinfo.txt'))).durationSec, 10507);
