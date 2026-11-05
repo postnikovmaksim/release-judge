@@ -135,3 +135,9 @@ test('[11-05] Звёздные врата: в файле нет дубляжа, 
   assert.equal(v(spec({ hdr: [], height: 1080, width: 1920 }, [{ kind: 'avo', author: 'Живов' }]),
     spec({ hdr: [], height: 1080, width: 1920 }, [dub('ТВ-3 (Zone Vision 2019)', 'AC3'), { kind: 'avo', author: 'Живов' }])).verdict, 'UPGRADE');
 });
+test('[11-05] раздача без MediaInfo (разбор по краткому описанию) — никогда не UPGRADE, только REVIEW с пометкой', () => {
+  const cand = spec({ ...DV8, hdr: ['dv', 'hdr10plus', 'hdr10'] }, [dub()], { confidence: 0.5 } as any);
+  const j = v(spec({}, [dub()]), cand);
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.check?.some(c => /MediaInfo нет/.test(c)));
+});

@@ -1,0 +1,10 @@
+Видео: 3840x2160 at 23.976 fps, MPEG-H HEVC DV HDR, ~51225 kbps avg
+Видео#2: 1920x1080 at 23.976 fps, MPEG-H DV HEVC, ~2100 kbps avg
+Аудио#1: Russian: 48 kHz/24-bit, Dolby TrueHD 5.1, ~3192 kbps avg |Дубляж, +субтитры|
+Аудио#2: Russian: 48 kHz/24-bit, Dolby TrueHD/Atmos 7.1, ~5131 kbps avg |Многоголосый закадровый, Видеосервис+субтитры|
+Аудио#3: Russian: 48 kHz/24-bit, Dolby TrueHD/Atmos 7.1, ~5072 kbps avg |Одноголосый закадровый, C. Визгунов|
+Аудио#4: Russian: 48 kHz/24-bit, Dolby TrueHD/Atmos 7.1, ~5073 kbps avg |Одноголосый закадровый, Ю. Живов|
+Аудио#5: Russian: 48 kHz/24-bit, Dolby TrueHD/Atmos 7.1, ~5054 kbps avg |Одноголосый закадровый, С. Рябов|
+Аудио#6: Russian: 48 kHz/24-bit, Dolby TrueHD/Atmos 7.1, ~5045 kbps avg |Одноголосый закадровый, Д. Есарев|
+Аудио#7: Ukrainian: 48 kHz, AC3, 3/2 (L,C,R,l,r) + LFE ch, ~448 kbps avg |Многоголосый закадровый, Інтер+субтитры|
+Аудио#8: English: 48 kHz/24-bit, Dolby TrueHD/Atmos 7.1, ~4867 kbps avg

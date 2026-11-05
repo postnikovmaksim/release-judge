@@ -1,0 +1,59 @@
+DISC INFO:
+Disc Label: <redacted>
+Disc Size: 135,874,967,052 bytes
+Protection: AACS2
+Extras: Ultra HD
+BDInfo: 0.8.0.1b
+PLAYLIST REPORT:
+Name: 00000.MPLS
+Length: 02:55:07.497 (h:m:s.ms)
+Size: 135,874,541,568 bytes
+Total Bitrate: 103.45 Mbps
+(*) Indicates included stream hidden by this playlist.
+VIDEO:
+Codec Bitrate Description
+--------------- ------------- -----------
+MPEG-H HEVC Video 51,225 kbps 2160p / 23.976 fps / 16:9 / Main 10 @ Level 5.1 @ High / 4:2:0 / 10 bits / HDR10 / Limited Range / BT.2020 / PQ / BT.2020 non-constant / Mastering display color primaries: BT.2020 / Mastering display luminance: min: 0.0050 cd/m2, max: 4000.0000 cd/m2 / Maximum Content Light Level: 4431 cd / m2 / Maximum Frame-Average Light Level: 2039 cd/m2
+* MPEG-H HEVC Video 2,100 kbps 1080p / 23.976 fps / 16:9 / Main 10 @ Level 5.1 @ High / 4:2:0 / 10 bits / Dolby Vision / Limited Range / BT.2020 / PQ / BT.2020 non-constant / Mastering display color primaries: BT.2020 / Mastering display luminance: min: 0.0050 cd/m2, max: 4000.0000 cd/m2
+AUDIO:
+Codec Language Bitrate Description
+--------------- ------------- ------------- -----------
+Dolby TrueHD Audio Russian 3832 kbps 5.1 / 48 kHz / 3192 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+Dolby TrueHD/Atmos Audio Russian 5771 kbps 7.1 / 48 kHz / 5131 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+Dolby TrueHD/Atmos Audio Russian 5712 kbps 7.1 / 48 kHz / 5072 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+Dolby TrueHD/Atmos Audio Russian 5713 kbps 7.1 / 48 kHz / 5073 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+Dolby TrueHD/Atmos Audio Russian 5694 kbps 7.1 / 48 kHz / 5054 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+Dolby TrueHD/Atmos Audio Russian 5685 kbps 7.1 / 48 kHz / 5045 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+Dolby Digital Audio Ukrainian 448 kbps 5.1 / 48 kHz / 448 kbps / DN -27dB
+Dolby TrueHD/Atmos Audio English 5507 kbps 7.1 / 48 kHz / 4867 kbps / 24-bit (AC3 Embedded: 5.1 / 48 kHz / 640 kbps / DN -31dB)
+SUBTITLES:
+Codec Language Bitrate Description
+--------------- ------------- ------------- -----------
+Presentation Graphics Russian 1.30 kbps 1920x1080 / 83 Captions
+Presentation Graphics Russian 18.46 kbps 1920x1080 / 1401 Captions
+Presentation Graphics Ukrainian 1.22 kbps 1920x1080 / 79 Captions
+Presentation Graphics English 25.27 kbps 1920x1080 / 1829 Captions
+Presentation Graphics English 20.35 kbps 1920x1080 / 1492 Captions
+FILES:
+Name Time In Length Size Total Bitrate
+--------------- ------------- ------------- ------------- -------------
+00000.M2TS 0:00:00.000 2:55:07.497 135,874,541,568 103,450 kbps
+CHAPTERS:
+Number Time In Length Avg Video Rate Max 1-Sec Rate Max 1-Sec Time Max 5-Sec Rate Max 5-Sec Time Max 10Sec Rate Max 10Sec Time Avg Frame Size Max Frame Size Max Frame Time
+------ ------------- ------------- -------------- -------------- -------------- -------------- -------------- -------------- -------------- -------------- -------------- --------------
+1 0:00:00.000 0:13:15.753 48,929 kbps 92,970 kbps 00:02:54.841 68,424 kbps 00:02:54.507 65,810 kbps 00:02:54.883 255,095 bytes 1,363,645 bytes 00:09:15.012
+2 0:13:15.753 0:13:21.300 50,275 kbps 91,386 kbps 00:24:06.695 64,224 kbps 00:25:09.633 62,313 kbps 00:20:00.699 262,108 bytes 1,804,381 bytes 00:14:32.496
+3 0:26:37.053 0:08:21.376 50,972 kbps 81,999 kbps 00:29:13.084 70,083 kbps 00:31:05.947 68,811 kbps 00:31:00.066 265,747 bytes 1,234,689 bytes 00:29:13.168
+4 0:34:58.429 0:06:36.604 54,597 kbps 92,559 kbps 00:35:00.389 64,812 kbps 00:39:23.652 64,242 kbps 00:39:23.861 284,641 bytes 1,643,929 bytes 00:35:00.473
+5 0:41:35.033 0:14:50.681 50,091 kbps 106,230 kbps 00:55:26.781 72,170 kbps 00:55:26.698 66,552 kbps 00:55:25.113 261,153 bytes 1,830,983 bytes 00:55:26.990
+6 0:56:25.715 0:09:47.586 52,565 kbps 92,102 kbps 00:58:20.747 70,392 kbps 00:57:08.425 69,803 kbps 00:56:50.949 274,047 bytes 1,581,937 bytes 01:01:19.676
+7 1:06:13.302 0:09:58.306 51,401 kbps 93,707 kbps 01:15:29.441 74,736 kbps 01:15:25.812 68,245 kbps 01:15:21.558 267,983 bytes 1,733,135 bytes 01:10:05.242
+8 1:16:11.608 0:12:06.559 50,896 kbps 92,401 kbps 01:27:35.917 72,742 kbps 01:16:36.592 68,590 kbps 01:16:33.380 265,347 bytes 1,733,862 bytes 01:27:36.000
+9 1:28:18.167 0:08:21.292 52,090 kbps 87,730 kbps 01:33:24.473 71,060 kbps 01:30:29.173 64,697 kbps 01:30:24.210 271,572 bytes 1,866,805 bytes 01:36:16.812
+10 1:36:39.460 0:10:02.393 51,255 kbps 95,827 kbps 01:42:09.122 68,495 kbps 01:42:07.955 61,481 kbps 01:42:05.994 267,222 bytes 1,774,928 bytes 01:39:16.951
+11 1:46:41.853 0:13:30.143 49,989 kbps 90,106 kbps 01:53:52.492 67,013 kbps 01:52:02.966 62,680 kbps 01:55:37.472 260,619 bytes 1,768,226 bytes 01:59:40.965
+12 2:00:11.996 0:06:57.666 50,456 kbps 88,452 kbps 02:05:27.269 60,474 kbps 02:00:52.745 57,999 kbps 02:00:12.455 263,052 bytes 1,708,597 bytes 02:05:27.353
+13 2:07:09.662 0:06:59.045 52,936 kbps 91,304 kbps 02:13:59.990 68,216 kbps 02:11:45.397 67,888 kbps 02:11:40.767 275,987 bytes 1,424,092 bytes 02:11:17.494
+14 2:14:08.707 0:17:17.576 52,201 kbps 93,462 kbps 02:14:14.588 68,841 kbps 02:29:28.709 67,809 kbps 02:29:28.793 272,151 bytes 1,722,418 bytes 02:14:14.671
+15 2:31:26.284 0:07:29.741 59,546 kbps 102,153 kbps 02:31:45.971 78,824 kbps 02:31:42.093 71,739 kbps 02:35:14.263 310,446 bytes 1,904,518 bytes 02:34:37.559
+16 2:38:56.025 0:16:11.471 48,275 kbps 92,354 kbps 02:43:24.669 69,485 kbps 02:48:54.040 67,874 kbps 02:48:51.955 251,695 bytes 1,555,147 bytes 02:43:24.878

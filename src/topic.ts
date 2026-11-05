@@ -3,11 +3,13 @@ import { db } from './db.js';
 import { fetchPage } from './trackers/fetchPage.js';
 import { extract } from './trackers/extract.js';
 import { parseMediainfoText } from './spec/mediainfoText.js';
+import { parseBdinfo } from './spec/bdinfo.js';
+import { specFromSummary } from './spec/summaryOnly.js';
 import { specFromMediainfo, enrichAudio, fillFromSummary, applyTitleDub } from './spec/fromMediainfo.js';
 import { descFlags, audioHints, audioSummary, titleClaimsDub } from './spec/descFlags.js';
 import type { ReleaseSpec } from './spec/schema.js';
 
-export interface TopicResult { url: string; tracker: string; title: string; parser: 'mediainfo' | 'none'; spec?: ReleaseSpec; flags: ReturnType<typeof descFlags>; cached: boolean; }
+export interface TopicResult { url: string; tracker: string; title: string; parser: 'mediainfo' | 'bdinfo' | 'summary' | 'none'; spec?: ReleaseSpec; flags: ReturnType<typeof descFlags>; cached: boolean; }
 
 const getCached = db.prepare('SELECT * FROM topic WHERE url = ?');
 const save = db.prepare(`INSERT INTO topic (url, tracker, html_hash, spec, parser, fetched_at) VALUES (@url, @tracker, @hash, @spec, @parser, CURRENT_TIMESTAMP)
@@ -16,7 +18,7 @@ const save = db.prepare(`INSERT INTO topic (url, tracker, html_hash, spec, parse
 /** Скачать и разобрать страницу раздачи. Кэш — 24 ч (если не force). LLM-фолбэк для описаний без MediaInfo — следующий шаг. */
 export async function parseTopic(url: string, opts: { force?: boolean } = {}): Promise<TopicResult> {
   const c = getCached.get(url) as any;
-  if (c && !opts.force && c.parser === 'mediainfo' && Date.now() - Date.parse(c.fetched_at + 'Z') < 24 * 3600_000) {   // неудачные разборы не кэшируем
+  if (c && !opts.force && c.parser !== 'none' && Date.now() - Date.parse(c.fetched_at + 'Z') < 24 * 3600_000) {   // неудачные разборы не кэшируем
     const p = JSON.parse(c.spec);
     return { ...p, cached: true };
   }
@@ -24,8 +26,10 @@ export async function parseTopic(url: string, opts: { force?: boolean } = {}): P
   const ex = extract(tracker, html);
   const flags = descFlags(ex.description + '\n' + ex.title);
   let spec: ReleaseSpec | undefined;
-  if (ex.mediainfo) {
-    spec = specFromMediainfo(parseMediainfoText(ex.mediainfo));
+  const tracks = ex.mediainfo ? parseMediainfoText(ex.mediainfo) : ex.bdinfo ? parseBdinfo(ex.bdinfo) : undefined;
+  if (!tracks) spec = specFromSummary(ex.title, ex.description);
+  if (tracks) {
+    spec = specFromMediainfo(tracks);
     spec.video.localized = flags.localized;
     spec.video.upscale = flags.upscale;
     if (flags.dvLayer && spec.video.hdr.includes('dv')) spec.video.dvLayer = flags.dvLayer;
@@ -34,7 +38,9 @@ export async function parseTopic(url: string, opts: { force?: boolean } = {}): P
     applyTitleDub(spec, titleClaimsDub(ex.title));
     spec.tracker = tracker; spec.topicUrl = url;
   }
-  const result: TopicResult = { url, tracker, title: ex.title, parser: spec ? 'mediainfo' : 'none', spec, flags, cached: false };
+  if (spec && !tracks) { spec.tracker = tracker; spec.topicUrl = url; spec.video.localized = flags.localized; spec.video.upscale = flags.upscale; }
+  const parser = ex.mediainfo ? 'mediainfo' : ex.bdinfo ? 'bdinfo' : spec ? 'summary' : 'none';
+  const result: TopicResult = { url, tracker, title: ex.title, parser: spec ? parser as any : 'none', spec, flags, cached: false };
   save.run({ url, tracker, hash: createHash('sha1').update(html).digest('hex'), spec: JSON.stringify(result), parser: result.parser });
   return result;
 }

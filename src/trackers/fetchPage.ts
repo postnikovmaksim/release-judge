@@ -14,6 +14,16 @@ function decode(buf: Buffer, contentType: string | null): string {
 }
 
 export async function fetchPage(url: string): Promise<{ html: string; tracker: string }> {
+  try { return await fetchOnce(url); }
+  catch (e: any) {
+    const transient = !(e instanceof FetchError) || /ERR_NAME_NOT_RESOLVED|ECONNRESET|ETIMEDOUT|fetch failed|timeout/i.test(e.message);
+    if (!transient || (e.status && e.status < 500)) throw e;
+    await new Promise(r => setTimeout(r, 10_000));
+    return fetchOnce(url);
+  }
+}
+
+async function fetchOnce(url: string): Promise<{ html: string; tracker: string }> {
   const t = trackerFor(url);
   if (!t) throw new FetchError(`unknown tracker: ${url}`);
   const s = t.cookieFrom === 'none' ? { cookie: '', userAgent: undefined } : sessionFor(t);

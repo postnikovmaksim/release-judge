@@ -146,6 +146,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   const flags: string[] = [];
   if (fr.localized_video !== false && cand.video.localized) flags.push('локализованный видеоряд');
   if (candExt) flags.push('русская дорожка внешняя (не внутри mkv)');
+  if ((cand.confidence ?? 1) < 1) flags.push('разобрано по краткому описанию раздачи (MediaInfo нет) — проверь вручную');
   if (!ruOriginal && cur.state === 'lossless' && cnd.state === 'lossy') flags.push(`дубляж lossless → lossy (${cur.label} → ${cnd.label})`);
   if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestCustom) flags.push(`дубляж лучше за счёт любительской сборки (${cnd.label})`);
   if (!ruOriginal && cur.offRank !== undefined && cnd.offRank !== undefined && cnd.offRank < cur.offRank)

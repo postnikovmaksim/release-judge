@@ -19,7 +19,7 @@ export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts =
   const current: ReleaseSpec = JSON.parse(row.spec);
   const movie: any = opts.movie ?? await radarr(`/movie/${movieId}`);
   const topic = await parseTopic(url, { force: opts.force });
-  if (!topic.spec) throw new Error(`не удалось разобрать раздачу (${topic.tracker}: нет MediaInfo)`);
+  if (!topic.spec) throw new Error(`не удалось разобрать раздачу (${topic.tracker}: нет MediaInfo/BDInfo/сводки)`);
   const mf = movie.movieFile ?? {};
   const j = judge(current, topic.spec, loadRules(), {
     year: movie.year,

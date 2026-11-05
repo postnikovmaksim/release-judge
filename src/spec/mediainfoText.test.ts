@@ -86,3 +86,33 @@ test('язык из названия дорожки, если Language пуст'
   const s = specFromMediainfo(parseMediainfoText('Video\nFormat : HEVC\nAudio #1\nFormat : AC-3\nTitle : RUS\nAudio #2\nFormat : AC-3\nTitle : Русский\nAudio #3\nFormat : DTS\nTitle : Rush commentary'));
   assert.deepEqual(s.audio.map(a => a.lang), ['rus', 'rus', 'und']);
 });
+
+test('TeamHD Патриот: BDInfo вместо MediaInfo — DV P7 + HDR10, TrueHD Atmos, типы дорожек из сводки', async () => {
+  const { parseBdinfo, looksLikeBdinfo } = await import('./bdinfo.js');
+  const { audioSummary } = await import('./descFlags.js');
+  const { fillFromSummary } = await import('./fromMediainfo.js');
+  const t = fx('patriot-teamhd.bdinfo.txt');
+  assert.ok(looksLikeBdinfo(t));
+  const s = specFromMediainfo(parseBdinfo(t));
+  assert.equal(s.video.height, 2160);
+  assert.deepEqual([...s.video.hdr].sort(), ['dv', 'hdr10']);
+  assert.equal(s.video.dvProfile, 7);
+  assert.equal(s.audio.length, 8);
+  assert.ok(s.audio.some(a => a.lang === 'rus' && a.codec === 'TrueHD' && a.atmos && a.lossless));
+  enrichAudio(s, audioHints(fx('patriot-teamhd.summary.txt')));
+  fillFromSummary(s, audioSummary(fx('patriot-teamhd.summary.txt')));
+  assert.equal(s.audio[0].kind, 'dub');
+  assert.equal(s.audio[1].kind, 'mvo');
+  assert.equal(s.audio[2].kind, 'avo');
+});
+
+test('раздача без дампа: спецификация по названию и сводке, уверенность < 1', async () => {
+  const { specFromSummary } = await import('./summaryOnly.js');
+  const s = specFromSummary('1917 (2019) UHD BDRemux 2160p [HDR10, Dolby Vision]',
+    'Видео: HEVC, 3840x2160, HDR10, Dolby Vision\nАудио 1: Русский, TrueHD Atmos 7.1 / Дубляж\nАудио 2: Английский, TrueHD Atmos 7.1 / Original');
+  assert.ok(s);
+  assert.equal(s!.video.height, 2160);
+  assert.ok(s!.video.hdr.includes('dv'));
+  assert.equal(s!.audio[0].kind, 'dub');
+  assert.ok(s!.confidence < 1);
+});
