@@ -31,8 +31,9 @@ export async function sendMovieCard(movieId: number, title: string, currentLine:
     const sz = sizeLine(it.currentSize, it.candidateSize);
     if (sz) lines.push(`   <b>Размер:</b> ${esc(sz)}`);
     if (it.verdict === 'REVIEW' && it.changes) {                       // на ревью — картина целиком
-      lines.push('   <b>Картина целиком:</b>');
-      for (const l of changesLines(it.changes, compact)) lines.push(`   ${esc(l)}`);
+      // свёрнутая цитата: видно начало, остальное раскрывается нажатием (Bot API 7.4+)
+      const body = changesLines(it.changes, compact).map(l => (l.head ? `<b>${esc(l.text)}</b>` : esc(l.text))).join('\n');
+      lines.push(`<b>Картина целиком</b>\n<blockquote expandable>${body}</blockquote>`);
     }
     lines.push('');
   });

@@ -24,9 +24,11 @@ test('[11-06] F1: карточка REVIEW — видео (HDR, битрейт), 
   assert.deepEqual(c.audio.added, ['RUS VO Кубик в Кубе — AC3 2ch']);
   assert.deepEqual(c.audio.removed, ['RUS Авторский Яроцкий — AC3 2ch']);
   assert.equal(c.subs, '2 → 3 (рус: 1 → 2)');
-  const lines = changesLines(c);
-  assert.ok(lines.some(l => /было 4 дорожек, станет 4/.test(l)));
-  assert.ok(changesLines(c, true).some(l => l === '  = без изменений: 2'));
+  const lines = changesLines(c).map(l => l.text);
+  assert.ok(lines.includes('Аудио: 4 → 4 дорожек'));
+  assert.ok(lines.includes('≠ Изменились (1):'));
+  assert.ok(lines.includes('   • RUS Дубляж Netflix: EAC3 6ch → TrueHD 8ch Atmos'));   // каждая дорожка — отдельной строкой
+  assert.ok(changesLines(c, true).map(l => l.text).includes('= Без изменений (2)'));
 });
 
 test('[11-06] размер файла до/после', () => {
@@ -41,4 +43,19 @@ test('[11-06] одинаковое видео — «без изменений»,
   assert.deepEqual(c.video, ['без изменений (2160p HDR10)']);
   assert.equal(c.audio.same.length, 1);
   assert.deepEqual(c.audio.removed, ['RUS MVO — DTS 6ch']);
+});
+
+test('[11-06] Серенити: «Ю. Сербин» = «Сербин», «Original» — не автор, неизвестные каналы не считаются отличием', () => {
+  const v = { hdr: ['hdr10'], codec: 'HEVC' };
+  const cur = S(v, [T('rus', 'avo', 'DTS', 6, 'Ю. Сербин'), T('rus', 'avo', 'DTS', 6, 'В. Королёв'), T('eng', 'original', 'DTS-HD MA', 8)]);
+  const cand = S(v, [T('rus', 'avo', 'DTS', undefined as any, 'Сербин'), T('rus', 'avo', 'DTS', 6, 'Королев'), T('eng', 'original', 'DTS-HD MA', undefined as any, 'Original')]);
+  const c = describeChanges(cur, cand);
+  assert.equal(c.audio.same.length, 3);
+  assert.deepEqual([c.audio.added, c.audio.removed, c.audio.changed], [[], [], []]);
+});
+
+test('[11-06] Серенити: «HDRezka» = «HDRezka Studio» (одно имя продолжает другое)', () => {
+  const v = { hdr: ['hdr10'], codec: 'HEVC' };
+  const c = describeChanges(S(v, [T('rus', 'mvo', 'AC3', 6, 'HDRezka Studio')]), S(v, [T('rus', 'mvo', 'AC3', 6, 'HDRezka')]));
+  assert.equal(c.audio.same.length, 1);
 });

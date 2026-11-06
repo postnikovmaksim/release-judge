@@ -10,19 +10,27 @@ const KIND: Record<string, string> = { dub: 'Дубляж', mvo: 'MVO', dvo: 'DV
 const LANG: Record<string, string> = { rus: 'RUS', eng: 'ENG', ukr: 'UKR', jpn: 'JPN', und: '?' };
 const norm = (s?: string) => (s ?? '').toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
 
-const fmt = (a: Track) => `${a.codec ?? '?'} ${a.channels ?? '?'}ch${a.atmos ? ' Atmos' : ''}`;
+const fmt = (a: Track) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.atmos ? ' Atmos' : ''}`;
+/** Не автор: служебные слова и метки источника («Original», «Dub», «ATMOS)»). */
+const NOT_AUTHOR = /^(original|оригинал|dub|дубляж|mvo|dvo|avo|vo|atmos|rus|eng|commentary)$/i;
+const cleanAuthor = (s?: string) => { const t = (s ?? '').replace(/[()]/g, '').trim(); return t && !NOT_AUTHOR.test(t) ? t : undefined; };
+/** Ключ автора: без инициалов и регистра («Ю. Сербин» = «Сербин», «В. Королёв» = «Королёв»). */
+const authorKey = (s?: string) => norm((cleanAuthor(s) ?? '').replace(/(^|\s)[A-ZА-ЯЁ]\.\s*/g, ' ').replace(/ё/g, 'е'));
 const who = (a: Track) => {
   const l = LANG[a.lang] ?? a.lang.toUpperCase();
   const k = KIND[a.kind] ?? a.kind;
-  return a.author ? `${l} ${k} ${a.author}` : `${l} ${k}`;
+  const au = cleanAuthor(a.author);
+  return au ? `${l} ${k} ${au}` : `${l} ${k}`;
 };
+/** Тот же формат: кодек совпадает; каналы и lossless сравниваем, только если известны с обеих сторон. */
+const sameFormat = (x: Track, y: Track) => norm(x.codec) === norm(y.codec) && (!x.channels || !y.channels || x.channels === y.channels) && !!x.atmos === !!y.atmos;
 export const trackLabel = (a: Track) => `${who(a)} — ${fmt(a)}`;
 
 /** Сопоставление дорожек: язык + тип + автор; без автора — по порядку внутри «язык + тип». */
 function keyed(list: Track[]) {
   const seen = new Map<string, number>();
   return list.map(a => {
-    const base = `${a.lang}|${a.kind}|${norm(a.author)}`;
+    const base = `${a.lang}|${a.kind}|${authorKey(a.author)}`;
     const i = seen.get(base) ?? 0; seen.set(base, i + 1);
     return { key: `${base}#${i}`, a };
   });
@@ -57,16 +65,24 @@ export function describeChanges(cur: ReleaseSpec, cand: ReleaseSpec): Changes {
   if (!video.length) video.push(`без изменений (${lc})`);
 
   const a = keyed(cur.audio), b = keyed(cand.audio);
-  const bm = new Map(b.map(x => [x.key, x.a]));
-  const am = new Set(a.map(x => x.key));
-  const same: string[] = [], changed: string[] = [], removed: string[] = [];
-  for (const { key, a: t } of a) {
-    const n = bm.get(key);
-    if (!n) removed.push(trackLabel(t));
-    else if (fmt(t) === fmt(n) && !!t.lossless === !!n.lossless) same.push(trackLabel(t));
-    else changed.push(`${who(t)}: ${fmt(t)} → ${fmt(n)}`);
+  // 1) точный ключ (язык + тип + автор без инициалов); 2) тот же язык и тип, одно имя продолжает другое («HDRezka» = «HDRezka Studio»)
+  const pairs: [Track, Track][] = [];
+  const restA = [...a], restB = [...b];
+  for (let i = restA.length - 1; i >= 0; i--) {
+    const j = restB.findIndex(x => x.key === restA[i].key);
+    if (j >= 0) { pairs.push([restA[i].a, restB[j].a]); restA.splice(i, 1); restB.splice(j, 1); }
   }
-  const added = b.filter(x => !am.has(x.key)).map(x => trackLabel(x.a));
+  for (let i = restA.length - 1; i >= 0; i--) {
+    const x = restA[i].a, kx = authorKey(x.author);
+    const j = restB.findIndex(y => y.a.lang === x.lang && y.a.kind === x.kind && kx && authorKey(y.a.author) && (authorKey(y.a.author).startsWith(kx) || kx.startsWith(authorKey(y.a.author))));
+    if (j >= 0) { pairs.push([x, restB[j].a]); restA.splice(i, 1); restB.splice(j, 1); }
+  }
+  const order = (t: Track) => cur.audio.indexOf(t);
+  pairs.sort((p, q) => order(p[0]) - order(q[0]));
+  const same: string[] = [], changed: string[] = [];
+  for (const [t, n] of pairs) (sameFormat(t, n) ? same.push(trackLabel(t)) : changed.push(`${who(t)}: ${fmt(t)} → ${fmt(n)}`));
+  const removed = restA.reverse().map(x => trackLabel(x.a));
+  const added = restB.map(x => trackLabel(x.a));
 
   const rs = (s: ReleaseSpec) => s.subs.filter(x => x.lang === 'rus').length;
   const subs = cur.subs.length !== cand.subs.length || rs(cur) !== rs(cand)
@@ -74,16 +90,23 @@ export function describeChanges(cur: ReleaseSpec, cand: ReleaseSpec): Changes {
   return { video, audio: { before: cur.audio.length, after: cand.audio.length, same, changed, added, removed }, subs };
 }
 
-/** Строки для Telegram (без HTML-экранирования — это делает вызывающий). compact — только счётчик неизменных дорожек. */
-export function changesLines(c: Changes, compact = false): string[] {
-  const out: string[] = [];
-  out.push(`Видео: ${c.video.join('; ')}`);
+/** Строки для Telegram (без HTML — экранирует и оформляет вызывающий): заголовок группы, затем по строке на дорожку. */
+export interface Line { text: string; head?: boolean; }
+export function changesLines(c: Changes, compact = false): Line[] {
+  const out: Line[] = [];
+  out.push({ text: 'Видео', head: true });
+  for (const v of c.video) out.push({ text: `• ${v}` });
   const au = c.audio;
-  out.push(`Аудио: было ${au.before} дорожек, станет ${au.after}`);
-  if (au.same.length) out.push(compact ? `  = без изменений: ${au.same.length}` : `  = без изменений (${au.same.length}): ${au.same.join('; ')}`);
-  if (au.changed.length) out.push(`  ≠ изменились: ${au.changed.join('; ')}`);
-  if (au.added.length) out.push(`  + добавились: ${au.added.join('; ')}`);
-  if (au.removed.length) out.push(`  − пропали: ${au.removed.join('; ')}`);
-  if (c.subs) out.push(`Субтитры: ${c.subs}`);
+  out.push({ text: `Аудио: ${au.before} → ${au.after} дорожек`, head: true });
+  const group = (title: string, xs: string[], collapse = false) => {
+    if (!xs.length) return;
+    out.push({ text: `${title} (${xs.length})${collapse ? '' : ':'}` });
+    if (!collapse) for (const x of xs) out.push({ text: `   • ${x}` });
+  };
+  group('≠ Изменились', au.changed);
+  group('+ Добавились', au.added);
+  group('− Пропали', au.removed);
+  group('= Без изменений', au.same, compact);
+  if (c.subs) { out.push({ text: 'Субтитры', head: true }); out.push({ text: `• ${c.subs}` }); }
   return out;
 }
