@@ -167,6 +167,7 @@ async function advance(log: (m: string) => void) {
           await removeOld(j, false);
           upd(j.old_hash, { status: 'done' });
           if (j.movie_id) await radarr('/command', { method: 'POST', body: JSON.stringify({ name: 'RescanMovie', movieId: j.movie_id }) }).catch(() => {});
+          await dropFromRadarrQueue(j.new_hash).catch(() => {});
           await sendText(`✅ ${esc(j.name)}: новая версия раздачи докачана на месте${j.movie_id ? ', Radarr перечитал файл' : ''}`);
         } else {
           await importMovie(j, t);
@@ -341,4 +342,12 @@ async function makeWritable(instance: string, hash: string) {
     for (const p of [join(t.save_path, f.name), join(t.save_path, f.name) + ".!qB"]) {
       try { const st = statSync(p); if ((st.mode & 0o666) !== 0o666) chmodSync(p, st.mode | 0o666); } catch { /* файла ещё нет */ }
     }
+}
+
+/** Radarr видит наш торрент в категории movies и держит его в очереди как «не апгрейд» — файл уже обновлён на месте, убираем запись (торрент не трогаем). */
+export async function dropFromRadarrQueue(hash: string) {
+  const q = await radarr<any>('/queue?pageSize=500&includeMovie=false');
+  for (const it of (q.records ?? []) as any[])
+    if (it.downloadId?.toLowerCase() === hash.toLowerCase())
+      await radarr(`/queue/${it.id}?removeFromClient=false&blocklist=false`, { method: 'DELETE' });
 }

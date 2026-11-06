@@ -53,7 +53,9 @@ const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычн�
 const codecRank = (a: { codec?: string; lossless?: boolean }) =>
   a.lossless || /TrueHD|DTS-HD\s*MA|FLAC|PCM|LPCM/i.test(a.codec ?? '') ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
 type DubState = 'none' | 'unknown' | 'lossy' | 'lossless';
-interface DubInfo { state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; }
+interface DubInfo { state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; bestPatched?: boolean; }
+/** Дубляж со вставками: расширенные/недублированные сцены закрыты закадром («+ MVO», «вставки», «на Extended Edition»). */
+export const PATCHED = /встав|insert|\+\s*(mvo|dvo|avo|vo|закадр|многогол|двухгол|одногол)|на\s+(extended|расширенн|режисс)/i;
 const normAuthor = (a: string) => a.toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
 /** Метки источника, а не студии: официальная дорожка с диска/стриминга одинакова во всех раздачах. */
 export const OFFICIAL = /licen[cs]e|лицензи|uhd-?bd|blu-?ray|\bbd\b|\bdvd\b|\br5\b|itunes|netflix|amazon|disney|apple\s*tv|okko|кинопоиск|\bivi\b|\bcee\b|\beur\b|\busa\b/i;
@@ -76,7 +78,7 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
     const off = dubs.filter(isOfficial).sort((x, y) => codecRank(y) - codecRank(x))[0];
     return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best),
       authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)),
-      offRank: off ? codecRank(off) : undefined, offLabel: off ? lbl(off) : undefined, bestCustom: isCustom(best) };
+      offRank: off ? codecRank(off) : undefined, offLabel: off ? lbl(off) : undefined, bestCustom: isCustom(best), bestPatched: PATCHED.test(tx(best)) };
   }
   if (opts.ext) return { state: 'unknown', label: 'внешняя дорожка (RUS ext)', authors: [] };
   if (opts.claims || rus.some(a => a.kind === 'unknown')) return { state: 'unknown', label: 'не распознан', authors: [] };
@@ -161,6 +163,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if ((cand.confidence ?? 1) < 1) flags.push('разобрано по краткому описанию раздачи (MediaInfo нет) — проверь вручную');
   if (!ruOriginal && cur.state === 'lossless' && cnd.state === 'lossy') flags.push(`дубляж lossless → lossy (${cur.label} → ${cnd.label})`);
   if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestCustom) flags.push(`дубляж лучше за счёт любительской сборки (${cnd.label})`);
+  if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestPatched) flags.push(`дубляж со вставками закадрового перевода (${cnd.label})`);
   if (!ruOriginal && cur.offRank !== undefined && cnd.offRank !== undefined && cnd.offRank < cur.offRank)
     flags.push(`официальный дубляж хуже (${cur.offLabel} → ${cnd.offLabel})`);
   if (!ruOriginal && cur.authors.length && cnd.authors.length) {

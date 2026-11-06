@@ -2,6 +2,7 @@ import { config } from './config.js';
 import { db, kvGet, kvSet, addIgnore } from './db.js';
 import type { JudgeResult } from './judge/service.js';
 import { changesLines, sizeLine } from './judge/changes.js';
+import { startReplace } from './replace.js';
 
 const enabled = () => Boolean(config.telegram.token && config.telegram.chatId);
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -45,7 +46,7 @@ export async function sendMovieCard(movieId: number, title: string, currentLine:
   };
   let lines = build(false);
   if (lines.join('\n').length > 4000) lines = build(true);           // лимит Telegram 4096 — неизменные дорожки свернуть до счётчика
-  const mode = kvGet('actions_mode') ?? 'report';
+  const mode = kvGet('actions_mode') ?? 'apply';   // 2026-11-06: «Заменить» выполняет замену
   if (mode === 'report') lines.push('<i>Режим отчёта: «Заменить» пока только записывает решение.</i>');
   const keyboard = items.map((it, i) => [
     { text: `✅ Заменить #${i + 1}`, callback_data: `v:${it.id}:ok` },
@@ -78,7 +79,8 @@ async function handleCallback(q: any, log: (m: string) => void) {
       note = `🚫 Игнор: ${v.release_title?.slice(0, 60)}`;
     } else if (action === 'ok') {
       db.prepare("UPDATE verdict SET user_decision = 'approve' WHERE id = ?").run(v.id);
-      note = `✅ Одобрено к замене: ${v.release_title?.slice(0, 60)}`;
+      try { note = `✅ Заменяю: ${v.release_title?.slice(0, 60)} — ${await startReplace(v.id)}`; }
+      catch (e: any) { note = `⚠️ Не удалось начать замену: ${e.message}`.slice(0, 180); }
     }
   } else if (kind === 'm' && action === 'keep') {
     const row = db.prepare('SELECT verdict_ids FROM tg_message WHERE message_id = ?').get(msg?.message_id) as any;

@@ -183,3 +183,14 @@ test('[11-06] Большой Лебовски: DTS-HD MA без «Compression mo
   cur.audio = cur.audio.map(a => a.kind === 'original' ? { ...a, codec: 'DTS-HD MA', lossless: true, atmos: false } : a);
   assert.equal(v(cur, cand).dims.find(d => d.dim === 'оригинал')!.cmp, 0);
 });
+
+test('[11-06] Две крепости Extended: дубляж «Мосфильм-Мастер + Позитив на Extended Edition» (Blu-ray CEE + MVO) — пока REVIEW, не автозамена', () => {
+  const cur = spec({}, [{ kind: 'mvo', author: 'Позитив-Мультимедиа', title: 'Многоголосый закадровый, Позитив-Мультимедиа', codec: 'DTS-HD MA', lossless: true }]);
+  const cand = spec({}, [
+    { kind: 'dub', author: 'Мосфильм-Мастер + Позитив Мультимедиа на Extended Edition', title: 'Дубляж, Blu-ray CEE + MVO', codec: 'AC3' },
+    { kind: 'mvo', author: 'Позитив Мультимедиа', title: 'Многоголосый, Позитив Мультимедиа', codec: 'DTS-HD MA', lossless: true },
+  ]);
+  const j = v(cur, cand, { currentEditionText: 'Extended', candidateEditionText: 'Extended' });
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.check?.some(c => /вставками/.test(c)));
+});
