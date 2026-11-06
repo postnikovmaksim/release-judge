@@ -1,7 +1,7 @@
 import { config } from './config.js';
 import { db, kvGet, kvSet, addIgnore } from './db.js';
 import type { JudgeResult } from './judge/service.js';
-import { changesLines, sizeLine } from './judge/changes.js';
+import { fitCard, renderCard } from './card.js';
 import { startReplace } from './replace.js';
 
 const enabled = () => Boolean(config.telegram.token && config.telegram.chatId);
@@ -18,45 +18,24 @@ export async function tg(method: string, body: any = {}): Promise<any> {
 
 const ICON: Record<string, string> = { UPGRADE: '🔼', REVIEW: '🤔', KEEP: '⏸', REJECT: '⛔' };
 
-/** Карточка по фильму: текущий файл + кандидаты UPGRADE/REVIEW с причинами и кнопками. */
+/** Карточка по фильму. Не влезает целиком — каждая раздача отдельным сообщением со своими кнопками. */
 export async function sendMovieCard(movieId: number, title: string, currentLine: string, items: JudgeResult[], currentUrl?: string) {
   if (!enabled() || !items.length) return;
   const cur = currentUrl ? `<a href="${esc(currentUrl)}">${esc(currentLine)}</a>` : esc(currentLine);
-  const build = (compact: boolean) => {
-  const lines = [`🎬 <b>${esc(title)}</b>`, `Сейчас: ${cur}`, ''];
-  items.forEach((it, i) => {
-    lines.push(`${ICON[it.verdict]} <b>#${i + 1} ${it.verdict}</b> — <a href="${esc(it.topicUrl)}">${esc(it.candidateTitle.slice(0, 120))}</a>`);
-    const block = (label: string, xs?: string[]) => {                  // по пункту на строку
-      if (!xs?.length) return;
-      lines.push(`   <b>${label}:</b>`);
-      for (const x of xs) lines.push(`   • ${esc(x)}`);
-    };
-    block("Почему", it.why); block("Минусы", it.cons); block("Проверить", it.check);
-    if (!it.why?.length && !it.cons?.length && !it.check?.length) it.reasons.forEach(r => lines.push(`   • ${esc(r)}`));
-    const sz = sizeLine(it.currentSize, it.candidateSize);
-    if (sz) lines.push(`   <b>Размер:</b> ${esc(sz)}`);
-    if (it.verdict === 'REVIEW' && it.changes) {                       // на ревью — картина целиком
-      // свёрнутая цитата: видно начало, остальное раскрывается нажатием (Bot API 7.4+)
-      const body = changesLines(it.changes, compact).map(l => (l.head ? `<b>${esc(l.text)}</b>` : esc(l.text))).join('\n');
-      lines.push(`<b>Картина целиком</b>\n<blockquote expandable>${body}</blockquote>`);
-    }
-    lines.push('');
-  });
-  return lines;
-  };
-  let lines = build(false);
-  if (lines.join('\n').length > 4000) lines = build(true);           // лимит Telegram 4096 — неизменные дорожки свернуть до счётчика
-  const mode = kvGet('actions_mode') ?? 'apply';   // 2026-11-06: «Заменить» выполняет замену
-  if (mode === 'report') lines.push('<i>Режим отчёта: «Заменить» пока только записывает решение.</i>');
-  const keyboard = items.map((it, i) => [
-    { text: `✅ Заменить #${i + 1}`, callback_data: `v:${it.id}:ok` },
-    { text: `🚫 Игнор #${i + 1}`, callback_data: `v:${it.id}:ig` },
-  ]);
-  keyboard.push([{ text: '⏸ Оставить как есть', callback_data: `m:${movieId}:keep` }]);
-  const msg = await tg('sendMessage', { chat_id: config.telegram.chatId, text: lines.join('\n').slice(0, 4000),
-    parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: { inline_keyboard: keyboard } });
-  db.prepare('INSERT OR REPLACE INTO tg_message (message_id, movie_id, verdict_ids) VALUES (?, ?, ?)')
-    .run(msg.message_id, movieId, JSON.stringify(items.map(i => i.id)));
+  const all = fitCard(title, cur, items);
+  const parts: { text: string; items: JudgeResult[]; start: number }[] = all ? [{ text: all, items, start: 0 }]
+    : items.map((it, i) => ({ text: fitCard(title, cur, [it], i) ?? renderCard(title, cur, [it], i, true, 0), items: [it], start: i }));
+  for (const p of parts) {
+    const keyboard = p.items.map((it, k) => [
+      { text: `✅ Заменить #${p.start + k + 1}`, callback_data: `v:${it.id}:ok` },
+      { text: `🚫 Игнор #${p.start + k + 1}`, callback_data: `v:${it.id}:ig` },
+    ]);
+    keyboard.push([{ text: '⏸ Оставить как есть', callback_data: `m:${movieId}:keep` }]);
+    const msg = await tg('sendMessage', { chat_id: config.telegram.chatId, text: p.text,
+      parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: { inline_keyboard: keyboard } });
+    db.prepare('INSERT OR REPLACE INTO tg_message (message_id, movie_id, verdict_ids) VALUES (?, ?, ?)')
+      .run(msg.message_id, movieId, JSON.stringify(p.items.map(i => i.id)));
+  }
 }
 
 export async function sendText(text: string) {
