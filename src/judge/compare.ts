@@ -72,7 +72,7 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
   if (dubs.length) {
     const ll = dubs.filter(a => a.lossless);
     const best = ll[0] ?? dubs[0];
-    const lbl = (a: typeof best) => `${a.codec ?? '?'} ${a.channels ?? '?'}ch${a.author ? ' (' + a.author + ')' : ''}`;
+    const lbl = (a: typeof best) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.author ? ' (' + a.author + ')' : ''}`;
     const off = dubs.filter(isOfficial).sort((x, y) => codecRank(y) - codecRank(x))[0];
     return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best),
       authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)),
@@ -92,7 +92,7 @@ function bestOriginal(s: ReleaseSpec, origLang?: string) {
   if (!o.length) return { r: 0, label: 'нет' };
   const score = (a: any) => codecRank(a) + (a.atmos ? 1 : 0);
   const b = o.reduce((x, y) => (score(y) > score(x) ? y : x));
-  return { r: score(b), label: `${b.codec ?? '?'}${b.atmos ? ' Atmos' : ''} ${b.channels ?? '?'}ch` };
+  return { r: score(b), label: `${b.codec ?? '?'}${b.atmos ? ' Atmos' : ''}${b.channels ? ` ${b.channels}ch` : ''}` };
 }
 const rusSubs = (s: ReleaseSpec) => (s.subs.some(x => x.lang === 'rus' && x.kind === 'full') ? 1 : 0);
 function trackerRank(t: string | undefined, prio: string[]) {

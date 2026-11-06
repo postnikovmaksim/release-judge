@@ -187,3 +187,11 @@ test('[11-06] битрейт из текстового MediaInfo/сводок: k
   assert.equal(s.video.bitrateKbps, 47800);
   assert.equal(s.audio[0].bitrateKbps, 448);
 });
+
+test('[11-06] Серенити NNM: русский MediaInfo «Канал(-ы) : 6 каналов» — число каналов, без «?ch»', () => {
+  const s = specFromMediainfo(parseMediainfoText(fx('serenity-nnm.mediainfo.txt')));
+  assert.equal(s.audio.length, 7);
+  assert.ok(s.audio.every(a => typeof a.channels === 'number' && a.channels > 0), JSON.stringify(s.audio.map(a => a.channels)));
+  assert.equal(s.audio[0].channels, 6);
+  assert.equal(s.audio[0].bitrateKbps, 384);
+});

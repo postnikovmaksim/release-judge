@@ -23,7 +23,7 @@ const KEYMAP: Record<string, string> = {
   // русская локализация MediaInfo
   'формат': 'Format', 'формат/информация': 'Format_Info', 'коммерческое название': 'Format_Commercial_IfAny',
   'профиль формата': 'Format_Profile', 'дополнительные параметры': 'Format_AdditionalFeatures', 'дополнительные функции': 'Format_AdditionalFeatures',
-  'формат hdr': 'HDR_Format_Full', 'язык': 'Language', 'заголовок': 'Title', 'каналы': 'Channels', 'канал(ы)': 'Channels',
+  'формат hdr': 'HDR_Format_Full', 'язык': 'Language', 'заголовок': 'Title', 'каналы': 'Channels', 'канал(ы)': 'Channels', 'канал(-ы)': 'Channels',   // NNM: «Канал(-ы) : 6 каналов»
   'битрейт': 'BitRate', 'метод сжатия': 'Compression_Mode', 'режим сжатия': 'Compression_Mode', 'принудительно': 'Forced',
   'по умолчанию': 'Default', 'характеристики трансфера': 'transfer_characteristics', 'характеристики передачи': 'transfer_characteristics',
   'ширина': 'Width', 'высота': 'Height', 'размер файла': 'FileSize', 'полное имя': 'CompleteName',
