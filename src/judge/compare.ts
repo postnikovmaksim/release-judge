@@ -32,7 +32,7 @@ export function videoRank(s: ReleaseSpec): number {
   if (v.hdr.includes('hlg')) return 1;
   return 0;
 }
-const videoLabel = (s: ReleaseSpec) => {
+export const videoLabel = (s: ReleaseSpec) => {
   const v = s.video, parts: string[] = [];
   if (v.hdr.includes('dv')) parts.push(`DV${v.dvProfile ? ' P' + v.dvProfile : ''}${v.dvLayer ? ' ' + v.dvLayer : ''}`);
   if (v.hdr.includes('hdr10plus')) parts.push('HDR10+');

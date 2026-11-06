@@ -50,7 +50,7 @@ export async function checkMovie(m: any, log: (s: string) => void, stats: Discov
   if (curUrl) try { currentTopicTitle = (await parseTopic(curUrl)).title; } catch { /* текущая раздача недоступна — не критично */ }
   for (const r of cands) {
     try {
-      const j = await judgeTopic(m.id, r.infoUrl, { guid: r.guid, indexerId: r.indexerId, releaseTitle: r.title, indexer: r.indexer, movie: m, force, currentTopicTitle });
+      const j = await judgeTopic(m.id, r.infoUrl, { releaseSize: r.size, guid: r.guid, indexerId: r.indexerId, releaseTitle: r.title, indexer: r.indexer, movie: m, force, currentTopicTitle });
       stats.judged++;
       if (j.verdict === 'UPGRADE') stats.upgrade++;
       if (j.verdict === 'REVIEW') stats.review++;

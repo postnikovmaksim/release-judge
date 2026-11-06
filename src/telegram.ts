@@ -1,6 +1,7 @@
 import { config } from './config.js';
 import { db, kvGet, kvSet, addIgnore } from './db.js';
 import type { JudgeResult } from './judge/service.js';
+import { changesLines, sizeLine } from './judge/changes.js';
 
 const enabled = () => Boolean(config.telegram.token && config.telegram.chatId);
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -20,14 +21,25 @@ const ICON: Record<string, string> = { UPGRADE: '🔼', REVIEW: '🤔', KEEP: '�
 export async function sendMovieCard(movieId: number, title: string, currentLine: string, items: JudgeResult[], currentUrl?: string) {
   if (!enabled() || !items.length) return;
   const cur = currentUrl ? `<a href="${esc(currentUrl)}">${esc(currentLine)}</a>` : esc(currentLine);
+  const build = (compact: boolean) => {
   const lines = [`🎬 <b>${esc(title)}</b>`, `Сейчас: ${cur}`, ''];
   items.forEach((it, i) => {
     lines.push(`${ICON[it.verdict]} <b>#${i + 1} ${it.verdict}</b> — <a href="${esc(it.topicUrl)}">${esc(it.candidateTitle.slice(0, 120))}</a>`);
     const block = (label: string, xs?: string[]) => { if (xs?.length) lines.push(`   <b>${label}:</b> ${esc(xs.join("; "))}`); };
     block("Почему", it.why); block("Минусы", it.cons); block("Проверить", it.check);
     if (!it.why?.length && !it.cons?.length && !it.check?.length) it.reasons.forEach(r => lines.push(`   • ${esc(r)}`));
+    const sz = sizeLine(it.currentSize, it.candidateSize);
+    if (sz) lines.push(`   <b>Размер:</b> ${esc(sz)}`);
+    if (it.verdict === 'REVIEW' && it.changes) {                       // на ревью — картина целиком
+      lines.push('   <b>Картина целиком:</b>');
+      for (const l of changesLines(it.changes, compact)) lines.push(`   ${esc(l)}`);
+    }
     lines.push('');
   });
+  return lines;
+  };
+  let lines = build(false);
+  if (lines.join('\n').length > 4000) lines = build(true);           // лимит Telegram 4096 — неизменные дорожки свернуть до счётчика
   const mode = kvGet('actions_mode') ?? 'report';
   if (mode === 'report') lines.push('<i>Режим отчёта: «Заменить» пока только записывает решение.</i>');
   const keyboard = items.map((it, i) => [

@@ -1,3 +1,4 @@
+import { describeChanges, type Changes } from './changes.js';
 import { db } from '../db.js';
 import { loadRules } from '../config.js';
 import { radarr } from '../radarr.js';
@@ -10,8 +11,9 @@ const fileSpec = db.prepare('SELECT spec FROM file_spec WHERE movie_id = ?');
 const saveVerdict = db.prepare(`INSERT INTO verdict (movie_id, topic_url, guid, indexer_id, verdict, reasons, decided_by, release_title, indexer)
   VALUES (@movie_id, @topic_url, @guid, @indexer_id, @verdict, @reasons, 'auto', @release_title, @indexer)`);
 
-export interface JudgeResult extends Judgement { id: number; movieId: number; title: string; topicUrl: string; candidateTitle: string; currentLabel?: string; }
-export interface JudgeOpts { force?: boolean; guid?: string; indexerId?: number; releaseTitle?: string; indexer?: string; movie?: any; currentTopicTitle?: string; }
+export interface JudgeResult extends Judgement { id: number; movieId: number; title: string; topicUrl: string; candidateTitle: string; currentLabel?: string;
+  currentSize?: number; candidateSize?: number; changes?: Changes; }
+export interface JudgeOpts { releaseSize?: number; force?: boolean; guid?: string; indexerId?: number; releaseTitle?: string; indexer?: string; movie?: any; currentTopicTitle?: string; }
 
 export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts = {}): Promise<JudgeResult> {
   const row = fileSpec.get(movieId) as any;
@@ -34,5 +36,6 @@ export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts =
     verdict: j.verdict, reasons: JSON.stringify({ reasons: j.reasons, dims: j.dims }),
     release_title: opts.releaseTitle ?? topic.title, indexer: opts.indexer ?? topic.tracker });
   return { ...j, id: Number(info.lastInsertRowid), movieId, title: `${movie.title} (${movie.year})`, topicUrl: url,
-    candidateTitle: opts.releaseTitle ?? topic.title, currentLabel: j.dims.find(d => d.dim === 'видео')?.current };
+    candidateTitle: opts.releaseTitle ?? topic.title, currentLabel: j.dims.find(d => d.dim === 'видео')?.current,
+    currentSize: mf.size ?? current.sizeBytes, candidateSize: opts.releaseSize ?? topic.spec.sizeBytes, changes: describeChanges(current, topic.spec) };
 }
