@@ -53,7 +53,7 @@ const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычн�
 const codecRank = (a: { codec?: string; lossless?: boolean }) =>
   a.lossless || /TrueHD|DTS-HD\s*MA|FLAC|PCM|LPCM/i.test(a.codec ?? '') ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
 type DubState = 'none' | 'unknown' | 'lossy' | 'lossless';
-interface DubInfo { state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; bestPatched?: boolean; }
+interface DubInfo { score?: number; state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; bestPatched?: boolean; }
 /** Дубляж со вставками: расширенные/недублированные сцены закрыты закадром («+ MVO», «вставки», «на Extended Edition»). */
 export const PATCHED = /встав|insert|\+\s*(mvo|dvo|avo|vo|закадр|многогол|двухгол|одногол)|на\s+(extended|расширенн|режисс)/i;
 const normAuthor = (a: string) => a.toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
@@ -73,10 +73,11 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
   const dubs = rus.filter(a => a.kind === 'dub' && !(opts.otherOfficialNonDub && isOfficial(a) && !realAuthor(a.author)));
   if (dubs.length) {
     const ll = dubs.filter(a => a.lossless);
-    const best = ll[0] ?? dubs[0];
+    // лучший дубляж: lossless > lossy, затем каналы, затем Atmos (Хоббит: DTS-HD MA 8ch by sergey_n лучше TrueHD 6ch)
+    const best = [...dubs].sort((x, y) => dubScore(y) - dubScore(x))[0];
     const lbl = (a: typeof best) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.author ? ' (' + a.author + ')' : ''}`;
     const off = dubs.filter(isOfficial).sort((x, y) => codecRank(y) - codecRank(x))[0];
-    return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best),
+    return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best), score: dubScore(best),
       authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)),
       offRank: off ? codecRank(off) : undefined, offLabel: off ? lbl(off) : undefined, bestCustom: isCustom(best), bestPatched: PATCHED.test(tx(best)) };
   }
@@ -85,6 +86,10 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
   return { state: 'none', label: 'нет', authors: [] };
 }
 const dubRankOf = (s: DubState) => (s === 'lossless' ? 2 : s === 'lossy' ? 1 : 0);
+/** Качество дорожки дубляжа: класс (lossless/lossy) важнее всего, затем каналы, затем Atmos. */
+function dubScore(a: { lossless?: boolean; codec?: string; channels?: number; atmos?: boolean }) {
+  return codecRank(a) * 100 + (a.channels ?? 0) * 2 + (a.atmos ? 1 : 0);
+}
 
 // ---------- оригинал ----------
 function bestOriginal(s: ReleaseSpec, origLang?: string) {
@@ -131,7 +136,8 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
     video: { dim: 'видео', current: videoLabel(current), candidate: videoLabel(cand), cmp: cmp(videoRank(current), videoRank(cand)) },
     russian_dub: ruOriginal ? { dim: 'русский дубляж', current: '—', candidate: '—', cmp: 0 }
       : { dim: 'русский дубляж', current: cur.label, candidate: cnd.label,
-          cmp: cur.state === 'unknown' || cnd.state === 'unknown' ? 0 : cmp(dubRankOf(cur.state), dubRankOf(cnd.state)) },
+          cmp: cur.state === 'unknown' || cnd.state === 'unknown' ? 0
+            : cur.score !== undefined && cnd.score !== undefined ? cmp(cur.score, cnd.score) : cmp(dubRankOf(cur.state), dubRankOf(cnd.state)) },
     original_audio: { dim: ruOriginal ? 'оригинал (рус.)' : 'оригинал', current: orig.c.label, candidate: orig.n.label, cmp: cmp(orig.c.r, orig.n.r) },
     subtitles: { dim: 'рус. субтитры', current: rusSubs(current) ? 'есть' : 'нет', candidate: rusSubs(cand) ? 'есть' : 'нет', cmp: cmp(rusSubs(current), rusSubs(cand)) },
     tracker: { dim: 'трекер', current: ctx.currentTracker ?? '?', candidate: ctx.candidateTracker ?? cand.tracker ?? '?', cmp: cmp(trackerRank(ctx.currentTracker, prio), trackerRank(ctx.candidateTracker ?? cand.tracker, prio)) },

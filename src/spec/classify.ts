@@ -20,7 +20,12 @@ export function classifyAudio(title: string | undefined, lang: string, originalL
   const lead = (title ?? '').replace(/^[\s|,.:;\/-]+/, '').match(/^(dub|mvo|dvo|avo|vo)(?![a-zа-яё])/i)?.[1].toLowerCase();
   if (lead) return lead as AudioKind;
   const t = title ?? '';
-  for (const [kind, re] of RULES) if (re.test(t)) return kind;
+  for (const [kind, re] of RULES) {
+    if (!re.test(t)) continue;
+    // «MVO, Омикрон (разговоры Орков оставлены в оригинале)» — русская дорожка не оригинал, если фильм не русский
+    if (kind === 'original' && (lang === 'rus' || lang === 'ukr') && originalLang !== lang) continue;
+    return kind;
+  }
   if (originalLang && lang === originalLang && lang !== 'rus') return 'original';
   if (lang === 'eng' && !t) return 'original';
   return 'unknown';

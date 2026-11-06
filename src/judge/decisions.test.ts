@@ -203,3 +203,23 @@ test('[11-06] Храброе сердце: TeamHD «BDRemux» в BDMV-конте
   assert.equal(j.verdict, 'REJECT');
   assert.match(j.reasons.join(' '), /BDMV/);
 });
+
+// ---------- 2026-11-07 ----------
+test('[11-07] Хоббит: видео лучше (DV + HDR10+), но пропадает дубляж DTS-HD MA 8ch (Мосфильм by sergey_n) → TrueHD 6ch — REVIEW, не UPGRADE', () => {
+  const cur = spec({}, [
+    { kind: 'dub', author: 'Dub. Мосфильм', title: 'Dub. Мосфильм', codec: 'DTS-HD MA', lossless: true, channels: 6 },
+    { kind: 'dub', author: 'Dub. Мосфильм by sergey_n', title: 'Dub. Мосфильм by sergey_n', codec: 'DTS-HD MA', lossless: true, channels: 8 },
+  ]);
+  const cand = spec({ hdr: ['dv', 'hdr10plus', 'hdr10'], dvProfile: 8 }, [
+    { kind: 'dub', author: 'Мосфильм-Мастер', title: 'Dub, Мосфильм-Мастер', codec: 'AC3', channels: 6 },
+    { kind: 'dub', author: 'Мосфильм-Мастер', title: 'Dub, Мосфильм-Мастер', codec: 'TrueHD', lossless: true, channels: 6 },
+  ]);
+  const j = v(cur, cand);
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.cons?.some(c => /дубляж/.test(c)), JSON.stringify(j.cons));
+});
+test('[11-07] Хоббит: «MVO, Омикрон (разговоры Орков и Эльфов оставлены в оригинале)» — это MVO, не оригинал', () => {
+  assert.equal(classifyAudio('Омикрон (разговоры Орков и Эльфов оставлены в оригинале)', 'rus'), 'unknown');
+  assert.equal(classifyAudio('MVO, Омикрон (разговоры Орков и Эльфов оставлены в оригинале)', 'rus'), 'mvo');
+  assert.equal(classifyAudio('Оригинал', 'rus', 'rus'), 'original');      // русский фильм — русская дорожка и есть оригинал
+});
