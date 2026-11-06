@@ -174,3 +174,16 @@ test('[11-05] длительность: JSON-секунды, hh:mm:ss, «3 h 17 
   assert.equal(specFromMediainfo(parseBdinfo(fx('patriot-teamhd.bdinfo.txt'))).durationSec, 10507);
   assert.equal(specFromMediainfo(parseMediainfoText(fx('avatar3-tapochek.mediainfo.txt'))).durationSec, 11820);
 });
+
+test('[11-06] битрейт из текстового MediaInfo/сводок: kb/s, Mb/s, пробелы-разделители, Кбит/сек, «4194 Kbps/1509 Kbps»', async () => {
+  const { parseBitrateKbps } = await import('./fromMediainfo.js');
+  assert.equal(parseBitrateKbps('640000'), 640);
+  assert.equal(parseBitrateKbps('448 kb/s'), 448);
+  assert.equal(parseBitrateKbps('4 194 kb/s'), 4194);
+  assert.equal(parseBitrateKbps('47.8 Mb/s'), 47800);
+  assert.equal(parseBitrateKbps('640 Кбит/сек'), 640);
+  assert.equal(parseBitrateKbps('Russian, 48.0 KHz, DTS-HD MA, 6 ch, 4194 Kbps/1509 Kbps - MVO'), 4194);
+  const s = specFromMediainfo(parseMediainfoText(fx('avatar3-tapochek.mediainfo.txt')));
+  assert.equal(s.video.bitrateKbps, 47800);
+  assert.equal(s.audio[0].bitrateKbps, 448);
+});

@@ -59,3 +59,11 @@ test('[11-06] Серенити: «HDRezka» = «HDRezka Studio» (одно им�
   const c = describeChanges(S(v, [T('rus', 'mvo', 'AC3', 6, 'HDRezka Studio')]), S(v, [T('rus', 'mvo', 'AC3', 6, 'HDRezka')]));
   assert.equal(c.audio.same.length, 1);
 });
+
+test('[11-06] битрейт аудио: показываем, разница > 15% — «изменилась»', () => {
+  const v = { hdr: ['hdr10'], codec: 'HEVC' };
+  const c = describeChanges(S(v, [T('rus', 'dub', 'AC3', 6, 'Пифагор', { bitrateKbps: 384 }), T('eng', 'original', 'DTS-HD MA', 8, undefined, { bitrateKbps: 4200 })]),
+    S(v, [T('rus', 'dub', 'AC3', 6, 'Пифагор', { bitrateKbps: 640 }), T('eng', 'original', 'DTS-HD MA', 8, undefined, { bitrateKbps: 3900 })]));
+  assert.deepEqual(c.audio.changed, ['RUS Дубляж Пифагор: AC3 6ch · 384 кбит/с → AC3 6ch · 640 кбит/с']);
+  assert.deepEqual(c.audio.same, ['ENG Оригинал — DTS-HD MA 8ch · 4.2 Мбит/с']);   // 4200 vs 3900 — в пределах 15%
+});

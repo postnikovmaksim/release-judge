@@ -45,7 +45,7 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
       lossless: a.Compression_Mode === 'Lossless' || /TrueHD|MLP|XLL|DTS-HD Master|FLAC|PCM/i.test(commercial),   // Compression mode бывает не указан
       atmos: /atmos|16-ch/i.test(commercial),
       channels: num(a.Channels),
-      bitrateKbps: num(a.BitRate) ? Math.round(+a.BitRate! / 1000) : undefined,
+      bitrateKbps: parseBitrateKbps(a.BitRate),
       title: a.Title,
     };
   });
@@ -62,7 +62,7 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
       width: num(v.Width), height: num(v.Height), codec: v.Format, hdr,
       dvProfile: dvProf ? +dvProf : undefined,
       dvLayer: /BL\+EL/i.test(v.HDR_Format_Settings ?? '') ? undefined : undefined, // FEL/MEL mediainfo не различает
-      bitrateKbps: num(v.BitRate) ? Math.round(+v.BitRate! / 1000) : undefined,
+      bitrateKbps: parseBitrateKbps(v.BitRate),
       localized: false, upscale: false,
       source: g.Title,
     },
@@ -108,6 +108,7 @@ export function fillFromSummary(spec: ReleaseSpec, summary: Map<number, { line: 
       spec.audio.push({ lang, kind: kind === 'unknown' && /оригинал|original/i.test(hint ?? '') ? 'original' : kind,
         codec, lossless: /TrueHD|DTS-HD MA|FLAC|PCM/.test(codec ?? ''), atmos: /atmos/i.test(line),
         channels: Number(line.match(/(\d)\s*ch\b|(\d)\.\d/i)?.slice(1).find(Boolean)) || undefined,
+        bitrateKbps: parseBitrateKbps(line),
         author: ['dub', 'mvo', 'dvo', 'avo', 'vo'].includes(kind) ? extractAuthor(hint) : undefined, title: hint });
     }
   }
@@ -130,4 +131,15 @@ export function parseDuration(v?: string | number): number | undefined {
   const h = s.match(/(\d+)\s*(?:h|ч)/i)?.[1], m = s.match(/(\d+)\s*(?:min|mn|мин|м(?![а-яё]))/i)?.[1], sec = s.match(/(\d+)\s*(?:s|с)(?![a-zа-яё])/i)?.[1];
   if (!h && !m) return undefined;
   return +(h ?? 0) * 3600 + +(m ?? 0) * 60 + +(sec ?? 0);
+}
+
+/** Битрейт → кбит/с: «640000» (JSON, бит/с) | «448 kb/s» | «4 194 kb/s» | «47.8 Mb/s» | «640 Кбит/сек» | «4194 Kbps/1509 Kbps» (берём первое). */
+export function parseBitrateKbps(v?: string | number): number | undefined {
+  if (v === undefined || v === null || v === '') return undefined;
+  const s = String(v).trim();
+  if (/^\d+(\.\d+)?$/.test(s)) return Math.round(+s / 1000);
+  const m = s.replace(/(\d)[\s\u00a0\u202f](?=\d{3}\b)/g, '$1').match(/(\d+(?:[.,]\d+)?)\s*(kb\/?s|kbps|кбит|kbit|mb\/?s|mbps|мбит|mbit)/i);
+  if (!m) return undefined;
+  const n = parseFloat(m[1].replace(',', '.'));
+  return Math.round(/^m|^м/i.test(m[2]) ? n * 1000 : n);
 }

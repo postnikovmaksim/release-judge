@@ -10,7 +10,8 @@ const KIND: Record<string, string> = { dub: 'Дубляж', mvo: 'MVO', dvo: 'DV
 const LANG: Record<string, string> = { rus: 'RUS', eng: 'ENG', ukr: 'UKR', jpn: 'JPN', und: '?' };
 const norm = (s?: string) => (s ?? '').toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
 
-const fmt = (a: Track) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.atmos ? ' Atmos' : ''}`;
+const kbps = (n?: number) => (n ? (n >= 1000 ? ` · ${(n / 1000).toFixed(1)} Мбит/с` : ` · ${n} кбит/с`) : '');
+const fmt = (a: Track) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.atmos ? ' Atmos' : ''}${kbps(a.bitrateKbps)}`;
 /** Не автор: служебные слова и метки источника («Original», «Dub», «ATMOS)»). */
 const NOT_AUTHOR = /^(original|оригинал|dub|дубляж|mvo|dvo|avo|vo|atmos|rus|eng|commentary)$/i;
 const cleanAuthor = (s?: string) => { const t = (s ?? '').replace(/[()]/g, '').trim(); return t && !NOT_AUTHOR.test(t) ? t : undefined; };
@@ -23,7 +24,8 @@ const who = (a: Track) => {
   return au ? `${l} ${k} ${au}` : `${l} ${k}`;
 };
 /** Тот же формат: кодек совпадает; каналы и lossless сравниваем, только если известны с обеих сторон. */
-const sameFormat = (x: Track, y: Track) => norm(x.codec) === norm(y.codec) && (!x.channels || !y.channels || x.channels === y.channels) && !!x.atmos === !!y.atmos;
+const sameFormat = (x: Track, y: Track) => norm(x.codec) === norm(y.codec) && (!x.channels || !y.channels || x.channels === y.channels) && !!x.atmos === !!y.atmos
+  && (!x.bitrateKbps || !y.bitrateKbps || Math.abs(x.bitrateKbps - y.bitrateKbps) / Math.max(x.bitrateKbps, y.bitrateKbps) <= 0.15);   // битрейт: отличие > 15% — изменение
 export const trackLabel = (a: Track) => `${who(a)} — ${fmt(a)}`;
 
 /** Сопоставление дорожек: язык + тип + автор; без автора — по порядку внутри «язык + тип». */
