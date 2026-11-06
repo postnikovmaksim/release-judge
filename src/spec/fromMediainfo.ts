@@ -42,7 +42,7 @@ export function specFromMediainfo(tracks: T[], originalLang?: string): ReleaseSp
       codec: /TrueHD|MLP/i.test(commercial) ? 'TrueHD' : /XLL|DTS-HD Master/i.test(commercial) ? 'DTS-HD MA'
         : /E-AC-3/i.test(commercial) ? 'EAC3' : /AC-3/i.test(commercial) ? 'AC3' : /DTS/i.test(commercial) ? 'DTS'
         : /FLAC/i.test(commercial) ? 'FLAC' : /PCM/i.test(commercial) ? 'PCM' : a.Format,
-      lossless: a.Compression_Mode === 'Lossless',
+      lossless: a.Compression_Mode === 'Lossless' || /TrueHD|MLP|XLL|DTS-HD Master|FLAC|PCM/i.test(commercial),   // Compression mode бывает не указан
       atmos: /atmos|16-ch/i.test(commercial),
       channels: num(a.Channels),
       bitrateKbps: num(a.BitRate) ? Math.round(+a.BitRate! / 1000) : undefined,

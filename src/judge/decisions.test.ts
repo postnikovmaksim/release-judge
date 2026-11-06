@@ -162,3 +162,24 @@ test('[11-05] длительность неизвестна у одной сто
   const j = v(spec({}, [dub()], { durationSec: 9000 }), spec({}, [dub()]), { candidateEditionText: '[Extended Cut]' });
   assert.equal(j.verdict, 'REVIEW');
 });
+
+// ---------- 2026-11-06 ----------
+test('[11-06] Большой Лебовски: в файле «Дубляж, DVD Group» + отдельная MVO «BD-CEE» — дубляж есть, кандидат с Dub не выигрыш', () => {
+  const cur = spec({}, [
+    { kind: 'dub', title: 'Дубляж, DVD Group', codec: 'AC3', channels: 6 },
+    { kind: 'mvo', author: 'ТК "1-й Канал"', title: 'Многоголосый закадровый, ТК "1-й Канал" / BD-CEE', codec: 'DTS', channels: 2 },
+  ]);
+  const cand = spec({}, [
+    { kind: 'mvo', author: 'ТК "1-й Канал"', title: 'MVO 1-й Канал BD-CEE', codec: 'DTS', channels: 2 },
+    { kind: 'dub', title: 'Dub', codec: 'AC3', channels: 6 },
+  ]);
+  const j = v(cur, cand);
+  assert.notEqual(j.dims.find(d => d.dim === 'русский дубляж')!.current, 'нет');
+  assert.equal(j.verdict, 'KEEP');
+});
+test('[11-06] Большой Лебовски: DTS-HD MA без «Compression mode» в MediaInfo — всё равно lossless, оригинал не «хуже»', () => {
+  const cur = spec({}, [dub()]), cand = spec({}, [dub()]);
+  cand.audio = cand.audio.map(a => a.kind === 'original' ? { ...a, codec: 'DTS-HD MA', lossless: false, atmos: false } : a);
+  cur.audio = cur.audio.map(a => a.kind === 'original' ? { ...a, codec: 'DTS-HD MA', lossless: true, atmos: false } : a);
+  assert.equal(v(cur, cand).dims.find(d => d.dim === 'оригинал')!.cmp, 0);
+});

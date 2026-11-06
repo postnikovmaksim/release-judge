@@ -51,7 +51,7 @@ const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычн�
 
 // ---------- дубляж ----------
 const codecRank = (a: { codec?: string; lossless?: boolean }) =>
-  a.lossless ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
+  a.lossless || /TrueHD|DTS-HD\s*MA|FLAC|PCM|LPCM/i.test(a.codec ?? '') ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
 type DubState = 'none' | 'unknown' | 'lossy' | 'lossless';
 interface DubInfo { state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; }
 const normAuthor = (a: string) => a.toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
@@ -109,8 +109,13 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   const candExt = /RUS\s*\(ext\)|внешн\w* (дорожк|звук)/i.test(title) && !cand.audio.some(a => a.lang === 'rus');
   const candClaims = /\bDub\b|дубляж|дублир|[|,]\s*D\s*(?:[,|]|$)/i.test(title);
   const offNonDub = (x: ReleaseSpec) => x.audio.some(a => a.lang === 'rus' && a.kind !== 'dub' && isOfficial(a));
-  const cur = dubInfo(current, { otherOfficialNonDub: offNonDub(cand) });
-  const cnd = dubInfo(cand, { claims: candClaims, ext: candExt, otherOfficialNonDub: offNonDub(current) });
+  // «Dub» у официальной дорожки не доверяем, только если это похоже на ту же дорожку с другой подписью (Индиана):
+  // у второй стороны официальная не-дубляж дорожка и нет своего дубляжа, а у этой стороны своей официальной не-дубляж дорожки нет.
+  // Лебовски: в файле «Дубляж, DVD Group» и отдельно MVO «BD-CEE» — это две разные дорожки, дубляж настоящий.
+  const hasDub = (x: ReleaseSpec) => x.audio.some(a => a.lang === 'rus' && a.kind === 'dub');
+  const distrust = (self: ReleaseSpec, other: ReleaseSpec) => offNonDub(other) && !hasDub(other) && !offNonDub(self);
+  const cur = dubInfo(current, { otherOfficialNonDub: distrust(current, cand) });
+  const cnd = dubInfo(cand, { claims: candClaims, ext: candExt, otherOfficialNonDub: distrust(cand, current) });
   // Редакция: если длительность известна у обоих — решает она (надпись «Ultimate»/«Extended» бывает у той же версии), иначе — текст.
   const byDur = current.durationSec && cand.durationSec ? cand.durationSec - current.durationSec : undefined;
   const edCmp = byDur !== undefined ? (byDur >= EDITION_SAME_SEC ? 1 : byDur <= -EDITION_SAME_SEC ? -1 : 0)
