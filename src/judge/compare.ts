@@ -147,6 +147,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if (hr.dv_profile_5 !== false && cand.video.hdr.includes('dv') && cand.video.dvProfile === 5 && !cand.video.hdr.includes('hdr10'))
     reject.push('DV Profile 5 без HDR10-фоллбэка (не будет direct play)');
   if (hr.upscale !== false && cand.video.upscale) reject.push('апскейл');
+  if (cand.container === 'bdmv') reject.push('структура диска BDMV/m2ts, не mkv — как BR-DISK');
   if (edCmp < 0) reject.push(`младшая редакция (${all.edition.current} → ${all.edition.candidate})`);
   if (!ruOriginal && hr.lose_russian_dub !== false && (cur.state === 'lossy' || cur.state === 'lossless') && cnd.state === 'none')
     reject.push('нет русского дубляжа, а в текущем файле он есть');

@@ -194,3 +194,12 @@ test('[11-06] Две крепости Extended: дубляж «Мосфильм-
   assert.equal(j.verdict, 'REVIEW');
   assert.ok(j.check?.some(c => /вставками/.test(c)));
 });
+
+test('[11-06] Храброе сердце: TeamHD «BDRemux» в BDMV-контейнере — REJECT, даже если звук лучше (Atmos)', () => {
+  const cur = spec({}, [dub()]);
+  const cand = spec({}, [dub()], { container: 'bdmv' } as any);
+  cand.audio = cand.audio.map(a => a.kind === 'original' ? { ...a, atmos: true } : a);
+  const j = v(cur, cand);
+  assert.equal(j.verdict, 'REJECT');
+  assert.match(j.reasons.join(' '), /BDMV/);
+});

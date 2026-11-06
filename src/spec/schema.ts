@@ -36,6 +36,7 @@ export const ReleaseSpec = z.object({
   subs: z.array(Subtitle).default([]),
   uniqueId: z.string().optional(),                    // MediaInfo General Unique ID — совпадает у файла и дампа той же раздачи
   edition: z.string().optional(),
+  container: z.enum(['mkv', 'bdmv']).optional(),       // по списку файлов .torrent: BDMV/…/*.m2ts — структура диска
   sizeBytes: z.number().optional(),
   durationSec: z.number().optional(),                 // длительность фильма — главный признак редакции
   tracker: z.string().optional(),

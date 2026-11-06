@@ -9,6 +9,8 @@ import { specFromSummary, kinozalAudioLines } from './spec/summaryOnly.js';
 import { specFromMediainfo, enrichAudio, fillFromSummary, applyTitleDub } from './spec/fromMediainfo.js';
 import { descFlags, audioHints, audioSummary, titleClaimsDub } from './spec/descFlags.js';
 import type { ReleaseSpec } from './spec/schema.js';
+import { isDiscLayout, mayBeDisc } from './spec/container.js';
+import { fetchNewTorrent } from './refresh/run.js';
 
 export interface TopicResult { url: string; tracker: string; title: string; parser: 'mediainfo' | 'bdinfo' | 'summary' | 'none'; spec?: ReleaseSpec; flags: ReturnType<typeof descFlags>; cached: boolean; }
 
@@ -41,6 +43,10 @@ export async function parseTopic(url: string, opts: { force?: boolean } = {}): P
     spec.tracker = tracker; spec.topicUrl = url;
   }
   if (spec && !tracks) { spec.tracker = tracker; spec.topicUrl = url; spec.video.localized = flags.localized; spec.video.upscale = flags.upscale; }
+  // признаки диска на странице — проверяем список файлов в .torrent (BDMV → как BR-DISK)
+  if (spec && mayBeDisc(html, !!ex.bdinfo)) {
+    try { const n = await fetchNewTorrent({ topicUrl: url, tracker }); if (n.meta) spec.container = isDiscLayout(n.meta.files.map(f => f.path)) ? 'bdmv' : 'mkv'; } catch { /* .torrent недоступен — не знаем */ }
+  }
   const parser = ex.mediainfo ? 'mediainfo' : ex.bdinfo ? 'bdinfo' : spec ? 'summary' : 'none';
   const result: TopicResult = { url, tracker, title: ex.title, parser: spec ? parser as any : 'none', spec, flags, cached: false };
   save.run({ url, tracker, hash: createHash('sha1').update(html).digest('hex'), spec: JSON.stringify(result), parser: result.parser });
