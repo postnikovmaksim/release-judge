@@ -28,6 +28,9 @@ export async function startReplace(verdictId: number): Promise<string> {
   const v = db.prepare('SELECT * FROM verdict WHERE id = ?').get(verdictId) as any;
   if (!v) throw new Error('вердикт не найден');
   if (!v.guid || !v.indexer_id) throw new Error('у вердикта нет guid/indexerId — запусти перепроверку фильма');
+  // карточка могла устареть: по этой раздаче уже вынесен более новый вердикт (например, правила ужесточились — BDMV)
+  const newer = db.prepare("SELECT verdict FROM verdict WHERE movie_id = ? AND topic_url = ? AND id > ? ORDER BY id DESC LIMIT 1").get(v.movie_id, v.topic_url, v.id) as any;
+  if (newer && !["UPGRADE", "REVIEW"].includes(newer.verdict)) throw new Error(`вердикт устарел — по новым правилам ${newer.verdict}`);
   const existing = db.prepare("SELECT status FROM replace_job WHERE movie_id = ? AND status NOT IN ('done', 'error')").get(v.movie_id) as any;
   if (existing) return `по этому фильму замена уже идёт (${existing.status})`;
   const m = await radarr(`/movie/${v.movie_id}`);
