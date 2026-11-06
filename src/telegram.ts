@@ -1,7 +1,8 @@
 import { config } from './config.js';
 import { db, kvGet, kvSet, addIgnore } from './db.js';
 import type { JudgeResult } from './judge/service.js';
-import { fitCard, renderCard } from './card.js';
+import { fitCard, renderCard, groupSame } from './card.js';
+import { loadRules } from './config.js';
 import { startReplace } from './replace.js';
 
 const enabled = () => Boolean(config.telegram.token && config.telegram.chatId);
@@ -18,23 +19,21 @@ export async function tg(method: string, body: any = {}): Promise<any> {
 
 const ICON: Record<string, string> = { UPGRADE: '🔼', REVIEW: '🤔', KEEP: '⏸', REJECT: '⛔' };
 
-/** Карточка по фильму. Не влезает целиком — каждая раздача отдельным сообщением со своими кнопками. */
+/** Карточки по фильму: каждая раздача (после склейки одинаковых) — отдельным сообщением: что сейчас, на что меняем, кнопки. */
 export async function sendMovieCard(movieId: number, title: string, currentLine: string, items: JudgeResult[], currentUrl?: string) {
   if (!enabled() || !items.length) return;
   const cur = currentUrl ? `<a href="${esc(currentUrl)}">${esc(currentLine)}</a>` : esc(currentLine);
-  const all = fitCard(title, cur, items);
-  const parts: { text: string; items: JudgeResult[]; start: number }[] = all ? [{ text: all, items, start: 0 }]
-    : items.map((it, i) => ({ text: fitCard(title, cur, [it], i) ?? renderCard(title, cur, [it], i, true, 0), items: [it], start: i }));
-  for (const p of parts) {
-    const keyboard = p.items.map((it, k) => [
-      { text: `✅ Заменить #${p.start + k + 1}`, callback_data: `v:${it.id}:ok` },
-      { text: `🚫 Игнор #${p.start + k + 1}`, callback_data: `v:${it.id}:ig` },
-    ]);
-    keyboard.push([{ text: '⏸ Оставить как есть', callback_data: `m:${movieId}:keep` }]);
-    const msg = await tg('sendMessage', { chat_id: config.telegram.chatId, text: p.text,
-      parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: { inline_keyboard: keyboard } });
-    db.prepare('INSERT OR REPLACE INTO tg_message (message_id, movie_id, verdict_ids) VALUES (?, ?, ?)')
-      .run(msg.message_id, movieId, JSON.stringify(p.items.map(i => i.id)));
+  const groups = groupSame(items, loadRules()?.trackers?.priority);
+  for (const [i, it] of groups.entries()) {
+    const text = fitCard(title, cur, [it], i) ?? renderCard(title, cur, [it], i, true, 0);
+    const keyboard = [
+      [{ text: '✅ Заменить', callback_data: `v:${it.id}:ok` }, { text: '🚫 Игнор', callback_data: `v:${it.id}:ig` }],
+      [{ text: '⏸ Оставить как есть', callback_data: `m:${movieId}:keep` }],
+    ];
+    const msg = await tg('sendMessage', { chat_id: config.telegram.chatId, text, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: { inline_keyboard: keyboard } });
+    // склеенные зеркала тоже привязываем к сообщению: «Игнор»/«Оставить» закроют их все
+    const ids = [it.id, ...items.filter(x => it.mirrors?.some(m => m.topicUrl === x.topicUrl)).map(x => x.id)];
+    db.prepare('INSERT OR REPLACE INTO tg_message (message_id, movie_id, verdict_ids) VALUES (?, ?, ?)').run(msg.message_id, movieId, JSON.stringify(ids));
   }
 }
 
@@ -52,8 +51,15 @@ async function handleCallback(q: any, log: (m: string) => void) {
     const v = db.prepare('SELECT * FROM verdict WHERE id = ?').get(Number(id)) as any;
     if (!v) { await tg('answerCallbackQuery', { callback_query_id: q.id, text: 'Вердикт не найден' }); return; }
     if (action === 'ig') {
-      addIgnore(v.topic_url, v.movie_id, v.release_title, 'telegram');
-      if (v.guid) addIgnore(v.guid, v.movie_id, v.release_title, 'telegram');
+      // вместе с раздачей — склеенные с ней зеркала на других трекерах (та же карточка)
+      const row = db.prepare("SELECT verdict_ids FROM tg_message WHERE message_id = ?").get(msg?.message_id) as any;
+      const ids: number[] = row ? JSON.parse(row.verdict_ids) : [v.id];
+      for (const vid of new Set([v.id, ...ids])) {
+        const x = db.prepare("SELECT * FROM verdict WHERE id = ?").get(vid) as any;
+        if (!x) continue;
+        addIgnore(x.topic_url, x.movie_id, x.release_title, "telegram");
+        if (x.guid) addIgnore(x.guid, x.movie_id, x.release_title, "telegram");
+      }
       db.prepare("UPDATE verdict SET user_decision = 'ignore' WHERE id = ?").run(v.id);
       note = `🚫 Игнор: ${v.release_title?.slice(0, 60)}`;
     } else if (action === 'ok') {

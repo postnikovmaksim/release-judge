@@ -12,7 +12,9 @@ const saveVerdict = db.prepare(`INSERT INTO verdict (movie_id, topic_url, guid, 
   VALUES (@movie_id, @topic_url, @guid, @indexer_id, @verdict, @reasons, 'auto', @release_title, @indexer)`);
 
 export interface JudgeResult extends Judgement { id: number; movieId: number; title: string; topicUrl: string; candidateTitle: string; currentLabel?: string;
-  currentSize?: number; candidateSize?: number; changes?: Changes; }
+  currentSize?: number; candidateSize?: number; changes?: Changes; tracker?: string; confidence?: number;
+  /** та же раздача на других трекерах (склеены по размеру) */
+  mirrors?: { tracker?: string; topicUrl: string }[]; }
 export interface JudgeOpts { releaseSize?: number; force?: boolean; guid?: string; indexerId?: number; releaseTitle?: string; indexer?: string; movie?: any; currentTopicTitle?: string; }
 
 export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts = {}): Promise<JudgeResult> {
@@ -37,5 +39,6 @@ export async function judgeTopic(movieId: number, url: string, opts: JudgeOpts =
     release_title: opts.releaseTitle ?? topic.title, indexer: opts.indexer ?? topic.tracker });
   return { ...j, id: Number(info.lastInsertRowid), movieId, title: `${movie.title} (${movie.year})`, topicUrl: url,
     candidateTitle: opts.releaseTitle ?? topic.title, currentLabel: j.dims.find(d => d.dim === 'видео')?.current,
-    currentSize: mf.size ?? current.sizeBytes, candidateSize: opts.releaseSize ?? topic.spec.sizeBytes, changes: describeChanges(current, topic.spec) };
+    currentSize: mf.size ?? current.sizeBytes, candidateSize: opts.releaseSize ?? topic.spec.sizeBytes, changes: describeChanges(current, topic.spec),
+    tracker: topic.tracker, confidence: topic.spec.confidence };
 }

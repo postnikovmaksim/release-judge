@@ -20,7 +20,9 @@ export function renderCard(title: string, cur: string, items: JudgeResult[], sta
     if (!it.why?.length && !it.cons?.length && !it.check?.length) it.reasons.forEach(r => lines.push(`   • ${esc(r)}`));
     const sz = sizeLine(it.currentSize, it.candidateSize);
     if (sz) lines.push(`   <b>Размер:</b> ${esc(sz)}`);
-    if (it.verdict === 'REVIEW' && it.changes) {                       // на ревью — картина целиком в свёрнутой цитате
+    if (it.mirrors?.length)
+      lines.push(`   <b>Та же раздача ещё на:</b> ${it.mirrors.map(m => `<a href="${esc(m.topicUrl)}">${esc(m.tracker ?? 'трекер')}</a>`).join(', ')}`);
+    if (it.changes) {                                                   // картина целиком (и для UPGRADE, и для REVIEW) в свёрнутой цитате
       let cl = changesLines(it.changes, compact);
       if (cl.length > bodyLimit) cl = [...cl.slice(0, bodyLimit), { text: `… ещё ${cl.length - bodyLimit} строк — см. раздачу` }];
       const body = cl.map(l => (l.head ? `<b>${esc(l.text)}</b>` : esc(l.text))).join('\n');
@@ -39,3 +41,22 @@ export function fitCard(title: string, cur: string, items: JudgeResult[], startI
   return undefined;
 }
 
+
+/**
+ * Одинаковые раздачи на разных трекерах (размер совпадает с точностью 0,1%) — предлагаем одну:
+ * лучший вердикт (UPGRADE раньше REVIEW), затем подробный разбор (MediaInfo, а не краткое описание), затем трекер по лесенке.
+ */
+export function groupSame(items: JudgeResult[], priority: string[] = ['TeamHD', 'Tapochek']): JudgeResult[] {
+  const rank = (t?: string) => { const i = t ? priority.findIndex(p => p.toLowerCase() === t.toLowerCase()) : -1; return i < 0 ? priority.length : i; };
+  const better = (a: JudgeResult, b: JudgeResult) =>
+    (a.verdict === b.verdict ? 0 : a.verdict === 'UPGRADE' ? -1 : 1) || ((b.confidence ?? 1) - (a.confidence ?? 1)) || (rank(a.tracker) - rank(b.tracker));
+  const groups: JudgeResult[][] = [];
+  for (const it of items) {
+    const g = it.candidateSize ? groups.find(g => g[0].candidateSize && Math.abs(g[0].candidateSize - it.candidateSize!) / Math.max(g[0].candidateSize, it.candidateSize!) <= 0.001) : undefined;
+    if (g) g.push(it); else groups.push([it]);
+  }
+  return groups.map(g => {
+    const [best, ...rest] = [...g].sort(better);
+    return rest.length ? { ...best, mirrors: rest.map(r => ({ tracker: r.tracker, topicUrl: r.topicUrl })) } : best;
+  }).sort((a, b) => (a.verdict === b.verdict ? 0 : a.verdict === 'UPGRADE' ? -1 : 1));
+}
