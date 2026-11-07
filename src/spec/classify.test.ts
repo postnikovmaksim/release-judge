@@ -48,3 +48,10 @@ test('NNM: обфускация латинскими двойниками', () =
   assert.equal(extractAuthor(t('Пepeвog: Aвmopckuй (ogнoгoлocый зakagpoвый) Aнgpeй Гaвpuлoв')), 'Андрей Гаврилов');
   assert.equal(t('Original English'), 'Original English');
 });
+
+test('[11-07] Мулан: «DVO. П.Гланц и Т.Казакова» — автор без типа с точкой; «Description» — комментарий', () => {
+  assert.equal(extractAuthor('DVO. П.Гланц и Т.Казакова'), 'П.Гланц и Т.Казакова');
+  assert.equal(extractAuthor('AVO. Н.Антонов'), 'Н.Антонов');
+  assert.equal(extractAuthor('Dub. Мосфильм'), 'Мосфильм');
+  assert.equal(classifyAudio('Description', 'eng'), 'commentary');
+});

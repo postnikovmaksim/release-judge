@@ -14,7 +14,14 @@ const kbps = (n?: number) => (n ? (n >= 1000 ? ` · ${(n / 1000).toFixed(1)} М�
 const fmt = (a: Track) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.atmos ? ' Atmos' : ''}${kbps(a.bitrateKbps)}`;
 /** Не автор: служебные слова и метки источника («Original», «Dub», «ATMOS)»). */
 const NOT_AUTHOR = /^(original|оригинал|dub|дубляж|mvo|dvo|avo|vo|atmos|rus|eng|commentary)$/i;
-const cleanAuthor = (s?: string) => { const t = (s ?? '').replace(/[()]/g, '').trim(); return t && !NOT_AUTHOR.test(t) ? t : undefined; };
+/** Тип перевода в начале подписи («DVO. П.Гланц», «AVO, Н.Антонов», «Дубляж: R5») — не часть имени автора. */
+const TYPE_PREFIX = /^(dub|mvo|dvo|avo|vo|дубляж|многоголосый|двухголосый|одноголосый|авторский|закадровый)(?![a-zа-яё])[\s.,:;|-]*/i;
+const cleanAuthor = (s?: string) => {
+  let t = (s ?? '').replace(/[()]/g, '').trim();
+  for (let i = 0; i < 3 && TYPE_PREFIX.test(t); i++) t = t.replace(TYPE_PREFIX, '').trim();
+  t = t.replace(/^[.,:;|-]+|[.,:;|-]+$/g, '').trim();
+  return t && !NOT_AUTHOR.test(t) ? t : undefined;
+};
 /** Ключ автора: без инициалов и регистра («Ю. Сербин» = «Сербин», «В. Королёв» = «Королёв»). */
 const authorKey = (s?: string) => norm((cleanAuthor(s) ?? '').replace(/(^|\s)[A-ZА-ЯЁ]\.\s*/g, ' ').replace(/ё/g, 'е'));
 const who = (a: Track) => {
@@ -73,6 +80,20 @@ export function describeChanges(cur: ReleaseSpec, cand: ReleaseSpec): Changes {
   for (let i = restA.length - 1; i >= 0; i--) {
     const j = restB.findIndex(x => x.key === restA[i].key);
     if (j >= 0) { pairs.push([restA[i].a, restB[j].a]); restA.splice(i, 1); restB.splice(j, 1); }
+  }
+  // 3) одноголосый: AVO и VO — одно и то же («AVO. Н.Антонов» = «VO Н.Антонов»); 4) у одной стороны автор не указан — тот же формат
+  const kindFamily = (k: string) => (k === 'avo' || k === 'vo' ? 'one' : k);
+  const sameExact = (x: Track, y: Track) => sameFormat(x, y) && (!x.bitrateKbps || !y.bitrateKbps || Math.abs(x.bitrateKbps - y.bitrateKbps) / Math.max(x.bitrateKbps, y.bitrateKbps) <= 0.03);
+  const passes: ((x: Track, y: Track) => boolean)[] = [
+    (x, y) => y.lang === x.lang && y.kind === x.kind && !!authorKey(x.author) && !!authorKey(y.author)
+      && (authorKey(y.author).startsWith(authorKey(x.author)) || authorKey(x.author).startsWith(authorKey(y.author))),
+    (x, y) => y.lang === x.lang && kindFamily(y.kind) === kindFamily(x.kind) && !!authorKey(x.author) && authorKey(x.author) === authorKey(y.author),
+    (x, y) => y.lang === x.lang && kindFamily(y.kind) === kindFamily(x.kind) && (!authorKey(x.author) || !authorKey(y.author)) && sameExact(x, y),
+  ];
+  for (const pass of passes) for (let i = restA.length - 1; i >= 0; i--) {
+    const x = restA[i].a;
+    const j = restB.findIndex(y => pass(x, y.a));
+    if (j >= 0) { pairs.push([x, restB[j].a]); restA.splice(i, 1); restB.splice(j, 1); }
   }
   for (let i = restA.length - 1; i >= 0; i--) {
     const x = restA[i].a, kx = authorKey(x.author);

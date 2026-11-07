@@ -6,7 +6,7 @@ const LANG: Record<string, string> = { russian: 'rus', english: 'eng', ukrainian
 export const normLang = (l?: string) => { if (!l) return 'und'; const k = l.toLowerCase().trim().split(/[\s(,]/)[0]; return LANG[k] ?? k; };
 
 const RULES: [AudioKind, RegExp][] = [
-  ['commentary', /коммент|comment/i],
+  ['commentary', /коммент|comment|\bdescription\b|descriptive|тифло/i],   // тифлокомментарий (Description) — как комментарий
   ['dub', /дубл|\bdub(bing|bed|l)?\b|=dub|^\s*D(\s|,|$)|полное дублирование/i],
   ['mvo', /многоголос|\bMVO\b|^\s*P(\s|,|$)/i],
   ['dvo', /двухголос|\bDVO\b/i],
@@ -39,7 +39,7 @@ export function extractAuthor(title?: string): string | undefined {
     .replace(/^(профессиональный|авторский|любительский)\s*/i, '')
     .replace(/^\([^)]*\)\s*/, '')
     .replace(/^(russian|rus|ukrainian|ukr|english|eng)\s*[,:-]?\s*/i, '')
-    .replace(/^(дубляж|полное дублирование|dub|многоголосый закадровый|двухголосый закадровый|одноголосый закадровый|авторский|закадровый|MVO|DVO|AVO|VO|D|P|A)(?=[\s,:-]|$)\s*[,:-]?\s*/i, '')
+    .replace(/^(дубляж|полное дублирование|dub|многоголосый закадровый|двухголосый закадровый|одноголосый закадровый|авторский|закадровый|MVO|DVO|AVO|VO|D|P|A)(?=[\s,.:-]|$)\s*[,.:-]?\s*/i, '')   // «DVO. П.Гланц» — с точкой тоже
     .replace(/\b(blu-?ray|bd|dvd|web|itunes|netflix|custom|cee|eur|usa)\b.*$/i, '')
     .replace(/[\s,|/-]+$/g, '').trim();
   return s || undefined;

@@ -67,3 +67,23 @@ test('[11-06] битрейт аудио: показываем, разница > 
   assert.deepEqual(c.audio.changed, ['RUS Дубляж Пифагор: AC3 6ch · 384 кбит/с → AC3 6ch · 640 кбит/с']);
   assert.deepEqual(c.audio.same, ['ENG Оригинал — DTS-HD MA 8ch · 4.2 Мбит/с']);   // 4200 vs 3900 — в пределах 15%
 });
+
+test('[11-07] Мулан: одна и та же дорожка с разной подписью — не «добавилась + пропала»', () => {
+  const v = { hdr: ['hdr10'], codec: 'HEVC' };
+  const A = (lang: string, kind: string, codec: string, ch: number, kbps: number, author?: string) => T(lang, kind, codec, ch, author, { bitrateKbps: kbps });
+  const cur = S(v, [
+    A('rus', 'dub', 'AC3', 6, 640, 'Dub.'), A('rus', 'dvo', 'DTS-HD MA', 6, 4300, 'DVO. П.Гланц и Т.Казакова'),
+    A('rus', 'avo', 'DTS-HD MA', 6, 4400, 'AVO. П.Гланц'), A('rus', 'avo', 'DTS-HD MA', 6, 4400, 'AVO. П.Санаев'), A('rus', 'avo', 'DTS-HD MA', 6, 4400, 'AVO. Ю.Живов'),
+    A('rus', 'avo', 'AC3', 1, 192, 'AVO. Н.Антонов'), A('ukr', 'mvo', 'AC3', 2, 192, 'MVO. Так Треба Продакшн'),
+  ]);
+  const cand = S(v, [
+    A('rus', 'dub', 'AC3', 6, 640, 'R5'), A('rus', 'dvo', 'DTS-HD MA', 6, 4300, 'П.Гланц и Т.Казакова'),
+    A('rus', 'avo', 'DTS-HD MA', 6, 4400, 'П.Гланц'), A('rus', 'avo', 'DTS-HD MA', 6, 4400, 'П.Санаев'), A('rus', 'avo', 'DTS-HD MA', 6, 4400, 'Ю.Живов'),
+    A('rus', 'vo', 'AC3', 1, 192, 'Н.Антонов'), A('ukr', 'mvo', 'AC3', 2, 192),
+  ]);
+  const c = describeChanges(cur, cand);
+  assert.deepEqual(c.audio.added, [], JSON.stringify(c.audio.added));
+  assert.deepEqual(c.audio.removed, [], JSON.stringify(c.audio.removed));
+  assert.equal(c.audio.same.length, 7);
+  assert.ok(c.audio.same.includes('RUS DVO П.Гланц и Т.Казакова — DTS-HD MA 6ch · 4.3 Мбит/с'));   // без «DVO.» в имени
+});
