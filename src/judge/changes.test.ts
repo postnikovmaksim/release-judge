@@ -87,3 +87,14 @@ test('[11-07] Мулан: одна и та же дорожка с разной �
   assert.equal(c.audio.same.length, 7);
   assert.ok(c.audio.same.includes('RUS DVO П.Гланц и Т.Казакова — DTS-HD MA 6ch · 4.3 Мбит/с'));   // без «DVO.» в имени
 });
+
+test('[11-08] Из Ада: дорожка подписана только студией («Карусель», без «MVO» в названии) — не «пропала+добавилась»', () => {
+  const v = { hdr: [], codec: 'AVC' };
+  const A = (kind: string, kbps: number, author?: string) => T('rus', kind, 'DTS-HD MA', 6, author, { bitrateKbps: kbps });
+  const cur = S(v, [A('unknown', 4000, 'Карусель')]);                 // реальный файл: Title дорожки = просто «Карусель»
+  const cand = S(v, [A('mvo', 4000, 'Карусель')]);                    // сводка раздачи: «MVO, Карусель»
+  const c = describeChanges(cur, cand);
+  assert.deepEqual(c.audio.added, [], JSON.stringify(c.audio.added));
+  assert.deepEqual(c.audio.removed, [], JSON.stringify(c.audio.removed));
+  assert.deepEqual(c.audio.same, ['RUS MVO Карусель — DTS-HD MA 6ch · 4.0 Мбит/с']);   // тип берём со стороны, где он известен
+});

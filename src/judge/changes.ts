@@ -89,6 +89,8 @@ export function describeChanges(cur: ReleaseSpec, cand: ReleaseSpec): Changes {
       && (authorKey(y.author).startsWith(authorKey(x.author)) || authorKey(x.author).startsWith(authorKey(y.author))),
     (x, y) => y.lang === x.lang && kindFamily(y.kind) === kindFamily(x.kind) && !!authorKey(x.author) && authorKey(x.author) === authorKey(y.author),
     (x, y) => y.lang === x.lang && kindFamily(y.kind) === kindFamily(x.kind) && (!authorKey(x.author) || !authorKey(y.author)) && sameExact(x, y),
+    // 5) тип не распознан с одной стороны (название дорожки — просто студия, без «MVO»/«Дубляж»), но студия та же — это она и есть («Карусель»)
+    (x, y) => y.lang === x.lang && (x.kind === 'unknown' || y.kind === 'unknown') && !!authorKey(x.author) && authorKey(x.author) === authorKey(y.author),
   ];
   for (const pass of passes) for (let i = restA.length - 1; i >= 0; i--) {
     const x = restA[i].a;
@@ -103,7 +105,12 @@ export function describeChanges(cur: ReleaseSpec, cand: ReleaseSpec): Changes {
   const order = (t: Track) => cur.audio.indexOf(t);
   pairs.sort((p, q) => order(p[0]) - order(q[0]));
   const same: string[] = [], changed: string[] = [];
-  for (const [t, n] of pairs) (sameFormat(t, n) ? same.push(trackLabel(t)) : changed.push(`${who(t)}: ${fmt(t)} → ${fmt(n)}`));
+  // тип неизвестен с одной стороны (сопоставлены по студии, пасс 5) — для показа берём тип с известной стороны
+  const withKnownKind = (x: Track, y: Track) => (x.kind === 'unknown' && y.kind !== 'unknown' ? { ...x, kind: y.kind } : x);
+  for (const [t0, n0] of pairs) {
+    const t = withKnownKind(t0, n0), n = withKnownKind(n0, t0);
+    sameFormat(t, n) ? same.push(trackLabel(t)) : changed.push(`${who(t)}: ${fmt(t)} → ${fmt(n)}`);
+  }
   const removed = restA.reverse().map(x => trackLabel(x.a));
   const added = restB.map(x => trackLabel(x.a));
 
