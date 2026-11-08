@@ -78,7 +78,9 @@ async function handleCallback(q: any, log: (m: string) => void) {
     }
     note = '⏸ Оставлено как есть, кандидаты в игноре';
   }
-  await tg('answerCallbackQuery', { callback_query_id: q.id, text: note.slice(0, 190) || 'ок' });
+  // answerCallbackQuery может упасть отдельно (query устарел из-за сетевого сбоя long polling) — решение
+  // в БД и startReplace к этому моменту уже выполнены, падение здесь не должно обрывать редактирование карточки и лог
+  await tg('answerCallbackQuery', { callback_query_id: q.id, text: note.slice(0, 190) || 'ок' }).catch(e => log(`answerCallbackQuery error: ${e.message}`));
   if (msg && note) {
     // дописываем решение в текст карточки; кнопки убираем, если решено всё
     const text = `${msg.text ?? ''}\n\n${note}`.slice(0, 4000);
