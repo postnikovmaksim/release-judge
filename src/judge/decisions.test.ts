@@ -238,3 +238,30 @@ test('[11-08] битрейт видео почти не меняется (< 5%) 
   const j = v(cur, cand);
   assert.equal(j.verdict, 'UPGRADE');
 });
+
+// ---------- 2026-11-08 (приоритеты по правилам Максима: HDR10+ > DV > HDR10; дубляж — класс+каналы+битрейт; оригинал — только бонус) ----------
+test('[11-08] универсальный HDR10+ (без DV) теперь лучше чистого DV — шире поддержка', () => {
+  const HDR10PLUS = { hdr: ['hdr10plus', 'hdr10'] as any };
+  assert.equal(v(spec(DV8, [dub()]), spec(HDR10PLUS, [dub()])).verdict, 'UPGRADE');
+  assert.equal(v(spec(HDR10PLUS, [dub()]), spec(DV8, [dub()])).verdict, 'KEEP');
+});
+test('[11-08] дубляж: битрейт — тай-брейк в целых Мбит/с (разница < 1 Мбит/с — шум парсера, не считается)', () => {
+  const d = (bitrateKbps?: number) => ({ kind: 'dub', author: 'Пифагор', codec: 'DTS-HD MA', lossless: true, channels: 6, bitrateKbps, title: 'Dub Пифагор' });
+  assert.equal(v(spec({}, [d(1500)]), spec({}, [d(4000)])).verdict, 'UPGRADE');     // 1.5 → 4.0 Мбит/с — реальный рост качества
+  const dLossy = (bitrateKbps?: number) => ({ kind: 'dub', author: 'Пифагор', codec: 'AC3', channels: 6, bitrateKbps, title: 'Dub Пифагор' });
+  assert.equal(v(spec({}, [dLossy(384)]), spec({}, [dLossy(448)])).verdict, 'KEEP');   // 384 → 448 kbps — внутри одного Мбит/с, шум
+});
+test('[11-08] не для всех фильмов оригинал английский: немецкая дорожка не считается «оригиналом» на японском фильме', () => {
+  const audio = (withGerman: boolean) => {
+    const a: any[] = [
+      { lang: 'rus', kind: 'dub', author: 'Пифагор', codec: 'AC3', title: 'Dub Пифагор' },
+      { lang: 'jpn', kind: 'original', codec: 'AC3', channels: 6 },
+    ];
+    if (withGerman) a.push({ lang: 'ger', kind: 'unknown', codec: 'DTS-HD MA', lossless: true, channels: 6, title: 'German' });
+    return a;
+  };
+  const cur = spec({}, [], { audio: audio(false) });
+  const cand = spec({}, [], { audio: audio(true) });   // тот же японский оригинал + лишняя немецкая lossless-дорожка
+  const j = v(cur, cand, { originalLang: 'jpn' });
+  assert.equal(j.dims.find(d => d.dim === 'оригинал')!.cmp, 0, 'немецкая дорожка не должна выигрывать «оригинал» у японского фильма');
+});

@@ -20,14 +20,12 @@ export interface Ctx {
 
 const cmp = (a: number, b: number): -1 | 0 | 1 => (b > a ? 1 : b < a ? -1 : 0);
 
-// ---------- видео: P7 == P8 (enhancement layer на Apple TV / ТВ не используется) ----------
+// ---------- видео: HDR10+ (универсальный формат) > DV > HDR10 > HLG > SDR; внутри DV градации (P7 FEL/MEL, P8) не важны ----------
 export function videoRank(s: ReleaseSpec): number {
   const v = s.video;
-  if (v.hdr.includes('dv')) {
-    if (v.dvProfile === 5 && !v.hdr.includes('hdr10')) return 0.5;     // P5 без фоллбэка
-    return 4 + (v.hdr.includes('hdr10plus') ? 0.5 : 0);
-  }
-  if (v.hdr.includes('hdr10plus')) return 3;
+  if (v.hdr.includes('dv') && v.dvProfile === 5 && !v.hdr.includes('hdr10')) return 0.5;   // P5 без фоллбэка — особый случай, кандидата с этим отбрасывает hard_reject
+  if (v.hdr.includes('hdr10plus')) return 4;      // шире поддержка, чем у DV — топ независимо от того, есть DV вместе с ним или нет
+  if (v.hdr.includes('dv')) return 3;             // любой профиль/слой — не различаем (P7 FEL = P7 MEL = P8)
   if (v.hdr.includes('hdr10')) return 2;
   if (v.hdr.includes('hlg')) return 1;
   return 0;
@@ -89,16 +87,18 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
   return { state: 'none', label: 'нет', authors: [] };
 }
 const dubRankOf = (s: DubState) => (s === 'lossless' ? 2 : s === 'lossy' ? 1 : 0);
-/** Качество дорожки дубляжа: класс (lossless/lossy) важнее всего, затем каналы, затем Atmos. */
-function dubScore(a: { lossless?: boolean; codec?: string; channels?: number; atmos?: boolean }) {
-  return codecRank(a) * 100 + (a.channels ?? 0) * 2 + (a.atmos ? 1 : 0);
+/** Качество дорожки дубляжа: класс (lossless/lossy) важнее всего, затем каналы, затем битрейт (целыми Мбит/с — шум < 1 Мбит/с не считаем), затем Atmos. Цель — 7.1 Atmos на 4-8 Мбит/с. */
+function dubScore(a: { lossless?: boolean; codec?: string; channels?: number; atmos?: boolean; bitrateKbps?: number }) {
+  return codecRank(a) * 100 + (a.channels ?? 0) * 2 + Math.floor((a.bitrateKbps ?? 0) / 1000) + (a.atmos ? 1 : 0);
 }
 
-// ---------- оригинал ----------
+// ---------- оригинал: тай-брейк, бонус, если дубляж/MVO/культовые ничего не решили ----------
 function bestOriginal(s: ReleaseSpec, origLang?: string) {
+  // не для всех фильмов оригинал английский: дорожка «неизвестного» типа — оригинал, только если её язык совпадает с origLang
+  // (иначе немецкая/французская дорожка на японском фильме ложно конкурировала бы за «лучший оригинал»)
   const o = origLang === 'rus'
     ? s.audio.filter(a => a.lang === 'rus')                                     // русский фильм: оригинал — русская дорожка
-    : s.audio.filter(a => a.kind === 'original' || (a.lang !== 'rus' && a.lang !== 'ukr' && a.kind === 'unknown'));
+    : s.audio.filter(a => a.kind === 'original' || (a.lang !== 'rus' && a.lang !== 'ukr' && a.kind === 'unknown' && (!origLang || a.lang === origLang)));
   if (!o.length) return { r: 0, label: 'нет' };
   const score = (a: any) => codecRank(a) + (a.atmos ? 1 : 0);
   const b = o.reduce((x, y) => (score(y) > score(x) ? y : x));

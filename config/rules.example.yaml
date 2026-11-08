@@ -6,29 +6,31 @@ trackers:
   priority: [TeamHD, Tapochek]        # остальные — после них
 
 hard_reject:                          # кандидат отбрасывается без вопросов
-  dv_profile_5: true                  # DV без HDR-фоллбэка (direct play)
-  br_disk: true
+  dv_profile_5: true                  # DV без HDR10-фоллбэка (не будет direct play)
   upscale: true
   lose_russian_dub: true              # внутри одного уровня качества дубляж терять нельзя
+  # BR-DISK (структура диска BDMV/m2ts вместо mkv) отбрасывается всегда, без переключателя
 
 flags_to_review:                      # не отказ, но решение — через Telegram
   localized_video: true               # «Локализованный видеоряд»
-  edition_change: true                # theatrical <-> extended и т.п.
   lose_cult_translation: true         # пропадает перевод из списка cult_translations
+  # смена редакции (theatrical <-> extended) проверяется по длительности файла всегда, без переключателя
 
 # Сравнение по порядку: первый пункт, где есть разница, решает (если нет потерь из flags_to_review)
 compare_order:
-  - video                             # DV (P7 = P8) > HDR10+ > HDR10 > SDR; HDR10+ поверх DV — плюс
-  - russian_dub                       # lossless > DTS/EAC3 > AC3; 2.0 на дубляже — не минус
-  - original_audio                    # TrueHD/Atmos, DTS-HD MA > lossy; 5.1+ ожидается на оригинале
+  - video                             # HDR10+ (универсальный, шире поддержка) > DV (любой профиль/слой — P7 FEL = P7 MEL = P8, не различаем) > HDR10 > HLG > SDR
+  - russian_dub                       # 1) есть ли дубляж; 2) класс кодека (lossless > DTS/EAC3 > AC3); 3) каналы; 4) битрейт целыми Мбит/с (разница < 1 Мбит/с — шум); 5) Atmos.
+                                       # Цель — 7.1 Atmos на 4-8 Мбит/с. MVO НЕ сравнивается (см. ниже) — его теряем молча, если дубляж уже есть
+  - original_audio                    # только тай-брейк/бонус, если всё выше равно — не блокирует и не двигает вердикт сам по себе
   - subtitles                         # наличие rus full / forced
   - tracker                           # TeamHD > Tapochek > прочие
-  # авторские/закадровые переводы (AVO/DVO/MVO) НЕ сравниваются, кроме cult_translations
+  # MVO/DVO/AVO (кроме cult_translations), комментарии, дорожки на иных языках (не рус, не оригинал) — НЕ сравниваются:
+  # терять их не страшно, в т.ч. намеренно экономит место. Авторские переводы особенно не критичны, когда дорожек и так много.
 
-# редакция сравнивается первой: длиннее (Extended/Director/Uncut) -> REVIEW, короче текущей -> REJECT
+# редакция сравнивается первой: длиннее (Extended/Director/Uncut) -> REVIEW, короче текущей -> REJECT (решает длительность файла, не надпись в названии)
 # дубляж: lossless -> lossy и смена студии -> REVIEW; RUS(ext) -> REVIEW с пометкой
 
-# Авторские переводы, потерю которых нельзя пропускать молча.
+# Авторские переводы, потерю которых нельзя пропускать молча. Чем качественнее культовая озвучка — тем лучше.
 # match — regex по названию дорожки/описанию; titles — опционально ограничить фильмами (tmdbId)
 cult_translations:
   - name: Гоблин (Пучков)
@@ -43,6 +45,4 @@ cult_translations:
     match: '(?i)михал[её]в|mikhalev'
     only_if_year_before: 2000
 
-actions:
-  mode: report                        # report | act   (этап 3 — только отчёт)
-  auto_upgrade: strictly_better       # авто только если лучше и нет ни одного флага
+# Действия: вердикт UPGRADE всегда идёт карточкой в Telegram с кнопкой «Заменить» — автозамены без подтверждения нет.

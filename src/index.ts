@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { config, loadRules } from './config.js';
+import { config } from './config.js';
 import { db } from './db.js';
 import { runSnapshot } from './snapshot.js';
 import { parseTopic } from './topic.js';
@@ -11,10 +11,9 @@ import { scheduleReplaces, replaceJobs, startReplace } from './replace.js';
 import { addIgnore } from './db.js';
 
 const app = Fastify({ logger: true });
-const rules = loadRules();
 let snapshotRunning = false;
 
-app.get('/health', async () => ({ ok: true, mode: rules?.actions?.mode ?? 'report' }));
+app.get('/health', async () => ({ ok: true }));   // UPGRADE всегда идёт карточкой в Telegram — автозамены без подтверждения нет, режим один
 
 app.get('/stats', async () => ({
   files: db.prepare('SELECT count(*) n FROM file_spec').get(),
