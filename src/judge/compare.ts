@@ -45,6 +45,9 @@ export const videoLabel = (s: ReleaseSpec) => {
 const LONG_EDITION = /extended|расширенн|director'?s|режисс[её]рск|uncut|unrated|ultimate|полная верси|без цензуры/i;
 /** Разница длительности, начиная с которой это другая редакция (MediaInfo в тексте округляет до минуты). */
 export const EDITION_SAME_SEC = 180;
+
+/** Падение видеобитрейта от этой доли — повод для REVIEW, даже если по другим пунктам кандидат лучше (не блокирует UPGRADE сам по себе — только когда есть что терять). */
+export const VIDEO_BITRATE_DROP_FRAC = 0.05;
 const fmtDur = (s: number) => `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}`;
 export const editionRank = (t?: string) => (t && LONG_EDITION.test(t) ? 1 : 0);
 const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычная';
@@ -168,6 +171,9 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if (fr.localized_video !== false && cand.video.localized) flags.push('локализованный видеоряд');
   if (candExt) flags.push('русская дорожка внешняя (не внутри mkv)');
   if ((cand.confidence ?? 1) < 1) flags.push('разобрано по краткому описанию раздачи (MediaInfo нет) — проверь вручную');
+  const vb = current.video.bitrateKbps, nb = cand.video.bitrateKbps;
+  if (vb && nb && nb < vb * (1 - VIDEO_BITRATE_DROP_FRAC))
+    flags.push(`видео битрейт ниже (${(vb / 1000).toFixed(1)} → ${(nb / 1000).toFixed(1)} Мбит/с, ${Math.round((nb / vb - 1) * 100)}%)`);
   if (!ruOriginal && cur.state === 'lossless' && cnd.state === 'lossy') flags.push(`дубляж lossless → lossy (${cur.label} → ${cnd.label})`);
   if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestCustom) flags.push(`дубляж лучше за счёт любительской сборки (${cnd.label})`);
   if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestPatched) flags.push(`дубляж со вставками закадрового перевода (${cnd.label})`);

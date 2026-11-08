@@ -223,3 +223,18 @@ test('[11-07] Хоббит: «MVO, Омикрон (разговоры Орков
   assert.equal(classifyAudio('MVO, Омикрон (разговоры Орков и Эльфов оставлены в оригинале)', 'rus'), 'mvo');
   assert.equal(classifyAudio('Оригинал', 'rus', 'rus'), 'original');      // русский фильм — русская дорожка и есть оригинал
 });
+
+// ---------- 2026-11-08 ----------
+test('[11-08] Тайное окно: битрейт видео падает на 6%, выигрыш только в субтитрах → REVIEW, не UPGRADE', () => {
+  const cur = spec({ hdr: [], height: 1080, width: 1920, bitrateKbps: 24800 }, [dub()], { subs: [] });
+  const cand = spec({ hdr: [], height: 1080, width: 1920, bitrateKbps: 23200 }, [dub()]);
+  const j = v(cur, cand);
+  assert.equal(j.verdict, 'REVIEW');
+  assert.ok(j.check?.some(c => /битрейт/.test(c)), JSON.stringify(j.check));
+});
+test('[11-08] битрейт видео почти не меняется (< 5%) — не повод для REVIEW', () => {
+  const cur = spec({ hdr: [], height: 1080, width: 1920, bitrateKbps: 24800 }, [dub()], { subs: [] });
+  const cand = spec({ hdr: [], height: 1080, width: 1920, bitrateKbps: 24000 }, [dub()]);
+  const j = v(cur, cand);
+  assert.equal(j.verdict, 'UPGRADE');
+});

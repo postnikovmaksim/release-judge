@@ -195,3 +195,16 @@ test('[11-06] Серенити NNM: русский MediaInfo «Канал(-ы) :
   assert.equal(s.audio[0].channels, 6);
   assert.equal(s.audio[0].bitrateKbps, 384);
 });
+
+test('[11-08] «Из Ада»: 5.1 в сводке — это 6 каналов, не 5 (LFE не отбрасываем)', async () => {
+  const { channelsFromText, fillFromSummary } = await import('./fromMediainfo.js');
+  const { audioSummary } = await import('./descFlags.js');
+  assert.equal(channelsFromText('DTS-HD MA, 5.1, 4.0 Мбит/с'), 6);
+  assert.equal(channelsFromText('TrueHD Atmos 7.1'), 8);
+  assert.equal(channelsFromText('AC3, 2.0, 192 kbps'), 2);
+  assert.equal(channelsFromText('Russian, AC3, 6 ch, 448 Kbps'), 6);
+  const s = { video: { hdr: [] as any, localized: false, upscale: false }, audio: [], subs: [], confidence: 0.5 } as any;
+  fillFromSummary(s, audioSummary('Аудио 1: Русский, DTS-HD MA, 5.1, 4.0 Мбит/с - MVO, Карусель\nАудио 2: Английский, DTS-HD MA, 5.1, 4.0 Мбит/с - Оригинал'));
+  assert.equal(s.audio[0].channels, 6);   // было 5 — ломало сопоставление с «6ch» той же дорожки из MediaInfo файла
+  assert.equal(s.audio[1].channels, 6);
+});

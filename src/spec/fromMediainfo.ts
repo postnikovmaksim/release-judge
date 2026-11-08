@@ -107,7 +107,7 @@ export function fillFromSummary(spec: ReleaseSpec, summary: Map<number, { line: 
       const codec = codecFromText(line);
       spec.audio.push({ lang, kind: kind === 'unknown' && /оригинал|original/i.test(hint ?? '') ? 'original' : kind,
         codec, lossless: /TrueHD|DTS-HD MA|FLAC|PCM/.test(codec ?? ''), atmos: /atmos/i.test(line),
-        channels: Number(line.match(/(\d)\s*ch\b|(\d)\.\d/i)?.slice(1).find(Boolean)) || undefined,
+        channels: channelsFromText(line),
         bitrateKbps: parseBitrateKbps(line),
         author: ['dub', 'mvo', 'dvo', 'avo', 'vo'].includes(kind) ? extractAuthor(hint) : undefined, title: hint });
     }
@@ -119,6 +119,14 @@ export function applyTitleDub(spec: ReleaseSpec, claims: boolean) {
   if (!claims || spec.audio.some(a => a.lang === 'rus' && a.kind === 'dub')) return;
   const t = spec.audio.find(a => a.lang === 'rus' && a.kind === 'unknown');
   if (t) { t.kind = 'dub'; t.author = t.author ?? extractAuthor(t.title?.replace(/[|]/g, '')); }
+}
+
+/** «6 ch» → 6; «N.M» (M=0|1) → N+M каналов — 5.1 = 6, 7.1 = 8, LFE не отбрасываем (было: «5.1» давало 5). */
+export function channelsFromText(s: string): number | undefined {
+  const ch = s.match(/(\d)\s*ch\b/i)?.[1];
+  if (ch) return Number(ch);
+  const m = s.match(/\b([1-8])\.([01])\b/);
+  return m ? Number(m[1]) + Number(m[2]) : undefined;
 }
 
 /** «6796.792» (JSON, сек) | «01:53:16.792» | «1 h 53 min» | «1 ч. 53 мин.» → секунды. */
