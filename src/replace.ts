@@ -11,11 +11,16 @@ import { sendText } from './telegram.js';
 import { currentTorrent } from './currentTopic.js';
 import { qb } from './refresh/clients.js';
 import { sameFile } from './refresh/plan.js';
+import { trackerFor } from './trackers/registry.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS replace_job (
   verdict_id INTEGER PRIMARY KEY, movie_id INTEGER, title TEXT, release_title TEXT, guid TEXT, indexer_id INTEGER,
   old_hash TEXT, old_instance TEXT, old_file TEXT, old_size INTEGER, download_id TEXT,
   status TEXT, error TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`);
+try { db.exec(`ALTER TABLE replace_job ADD COLUMN old_topic TEXT`); } catch {}
+
+/** Трекеры, где сид важен для рейтинга — старую раздачу не удаляем, переводим в категорию seeded. */
+const SEEDED_TRACKERS = ['TeamHD', 'Tapochek'];
 const upd = (id: number, f: Record<string, any>) => {
   const k = Object.keys(f);
   db.prepare(`UPDATE replace_job SET ${k.map(x => `${x} = @${x}`).join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE verdict_id = @id`).run({ ...f, id });
@@ -35,9 +40,9 @@ export async function startReplace(verdictId: number): Promise<string> {
   if (existing) return `по этому фильму замена уже идёт (${existing.status})`;
   const m = await radarr(`/movie/${v.movie_id}`);
   const old = m.movieFile?.path ? await currentTorrent(m.movieFile.path, true) : undefined;
-  db.prepare(`INSERT OR REPLACE INTO replace_job (verdict_id, movie_id, title, release_title, guid, indexer_id, old_hash, old_instance, old_file, old_size, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'grabbing')`)
-    .run(v.id, v.movie_id, `${m.title} (${m.year})`, v.release_title, v.guid, v.indexer_id, old?.hash ?? null, old?.instance ?? null, m.movieFile?.path ?? null, m.movieFile?.size ?? null);
+  db.prepare(`INSERT OR REPLACE INTO replace_job (verdict_id, movie_id, title, release_title, guid, indexer_id, old_hash, old_instance, old_file, old_size, old_topic, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'grabbing')`)
+    .run(v.id, v.movie_id, `${m.title} (${m.year})`, v.release_title, v.guid, v.indexer_id, old?.hash ?? null, old?.instance ?? null, m.movieFile?.path ?? null, m.movieFile?.size ?? null, old?.comment ?? null);
   try {
     await grab(v.guid, v.indexer_id, v.movie_id);
     upd(v.id, { status: 'downloading' });
@@ -99,25 +104,34 @@ async function manualImport(j: any, qi: any) {
     releaseGroup: it.releaseGroup, indexerFlags: it.indexerFlags ?? 0 }] }) });
 }
 
-/** Новый файл в библиотеке — удаляем старый торрент. С файлами — только если их не раздаёт другой торрент (cross-seed). */
+/** Новый файл в библиотеке — разбираемся со старым торрентом. На трекерах, где важен сид (TeamHD, Tapochek),
+ *  раздачу не трогаем — только переводим в категорию seeded. На остальных удаляем, вместе с файлом,
+ *  если его больше никто не раздаёт (cross-seed). */
 async function finish(j: any, m: any, log: (m: string) => void) {
   let note = 'старый торрент не найден — удалять нечего';
   if (j.old_hash && j.old_instance) {
     const [old] = await qb(j.old_instance, `/torrents/info?hashes=${j.old_hash}`) as any[];
     if (old) {
-      let withFiles = true;
-      let me: { ino: number; size: number } | undefined;
-      try { const s = statSync(old.content_path); if (s.isFile()) me = { ino: s.ino, size: s.size }; } catch { }
-      for (const base of config.qbit.urls) {
-        let l: any[]; try { l = await qb(base, '/torrents/info'); } catch { continue; }
-        for (const x of l) {
-          if (x.hash === j.old_hash) continue;
-          if (x.content_path === old.content_path) withFiles = false;
-          else if (me) { try { if (sameFile(statSync(x.content_path), me)) withFiles = false; } catch { } }
+      const trackerId = j.old_topic ? trackerFor(j.old_topic)?.id : undefined;
+      if (trackerId && SEEDED_TRACKERS.includes(trackerId)) {
+        await qb(j.old_instance, '/torrents/createCategory', { category: 'seeded' }).catch(() => {});
+        await qb(j.old_instance, '/torrents/setCategory', { hashes: j.old_hash, category: 'seeded' });
+        note = `старая раздача (${trackerId}) переведена в категорию seeded — сидируем дальше`;
+      } else {
+        let withFiles = true;
+        let me: { ino: number; size: number } | undefined;
+        try { const s = statSync(old.content_path); if (s.isFile()) me = { ino: s.ino, size: s.size }; } catch { }
+        for (const base of config.qbit.urls) {
+          let l: any[]; try { l = await qb(base, '/torrents/info'); } catch { continue; }
+          for (const x of l) {
+            if (x.hash === j.old_hash) continue;
+            if (x.content_path === old.content_path) withFiles = false;
+            else if (me) { try { if (sameFile(statSync(x.content_path), me)) withFiles = false; } catch { } }
+          }
         }
+        await qb(j.old_instance, '/torrents/delete', { hashes: j.old_hash, deleteFiles: String(withFiles) });
+        note = withFiles ? 'старый торрент удалён вместе с файлом' : 'старый торрент удалён, файл оставлен (его раздаёт ещё один торрент)';
       }
-      await qb(j.old_instance, '/torrents/delete', { hashes: j.old_hash, deleteFiles: String(withFiles) });
-      note = withFiles ? 'старый торрент удалён вместе с файлом' : 'старый торрент удалён, файл оставлен (его раздаёт ещё один торрент)';
     }
   }
   upd(j.verdict_id, { status: 'done', error: null });
