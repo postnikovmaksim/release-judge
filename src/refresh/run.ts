@@ -152,19 +152,22 @@ async function advance(log: (m: string) => void) {
       if (!t) { upd(j.old_hash, { status: 'error', error: 'новый торрент пропал из qBit' }); continue; }
       if (j.status === 'checking') {
         if (/checking/i.test(t.state)) continue;
+        // старый торрент снят до старта докачки (решение Максима 2026-11-09): иначе он делит с новым одни и те же файлы
+        // на диске, новый начинает перезаписывать кусками — старый видит чужие данные и улетает в missingFiles
+        await removeOld(j, false);
         await qb(j.instance, '/torrents/start', { hashes: j.new_hash });   // фильм на месте: докачка изменившихся кусков прямо в файл
         upd(j.old_hash, { status: 'downloading' });
         continue;
       }
       if (j.status === 'downloading') {
+        // qBit иногда не применяет /start сразу после recheck и остаётся на паузе (видели 2026-11-09 на SBR и Serenity) — досылаем
+        if (/^(stopped|paused)/i.test(t.state)) { await qb(j.instance, '/torrents/start', { hashes: j.new_hash }); continue; }
         if (t.progress < 1) continue;
         if (j.kind === 'tv') {
           const res = await importTv(j, t);
-          await removeOld(j, false);
           upd(j.old_hash, { status: 'done', error: res.ok ? null : res.text });
           await sendText(`${res.ok ? '✅' : '⚠️'} ${esc(j.name)}: докачано. ${esc(res.text)}`);
         } else if (j.strategy === 'same_path') {
-          await removeOld(j, false);
           upd(j.old_hash, { status: 'done' });
           if (j.movie_id) await radarr('/command', { method: 'POST', body: JSON.stringify({ name: 'RescanMovie', movieId: j.movie_id }) }).catch(() => {});
           await dropFromRadarrQueue(j.new_hash).catch(() => {});
