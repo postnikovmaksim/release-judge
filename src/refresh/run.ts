@@ -28,7 +28,7 @@ const upd = (h: string, f: Record<string, any>) => {
 };
 const esc = (s: string) => s.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]!));
 
-export interface Candidate { instance: string; hash: string; name: string; category: string; kind: Kind; savePath: string; contentPath: string; topicUrl: string; tracker: string; msg: string; }
+export interface Candidate { instance: string; hash: string; name: string; category: string; kind: Kind; savePath: string; contentPath: string; topicUrl: string; tracker: string; msg: string; tags: string; }
 
 /** Все раздачи, которые трекер «забыл». Публичные/без ссылки на тему пропускаем. */
 export async function detect(): Promise<Candidate[]> {
@@ -45,7 +45,7 @@ export async function detect(): Promise<Candidate[]> {
       const url = String(props.comment ?? '').match(/https?:\/\/\S+/)?.[0];
       const tr = url ? trackerFor(url) : undefined;
       if (!url || !tr) continue;
-      out.push({ instance: base, hash: t.hash, name: t.name, category: t.category, kind, savePath: t.save_path, contentPath: t.content_path, topicUrl: url, tracker: tr.id, msg: bad.msg });
+      out.push({ instance: base, hash: t.hash, name: t.name, category: t.category, kind, savePath: t.save_path, contentPath: t.content_path, topicUrl: url, tracker: tr.id, msg: bad.msg, tags: t.tags ?? '' });
     }
   }
   return out;
@@ -120,7 +120,7 @@ async function start(c: Candidate, log: (m: string) => void) {
   const savePath = a.strategy === 'same_path' ? c.savePath : join(c.savePath, '_refresh');
   const form = new FormData();
   if (a._buf) form.append('torrents', new Blob([new Uint8Array(a._buf)]), 'new.torrent'); else form.append('urls', a._magnet!);
-  form.append('savepath', savePath); form.append('category', c.category); form.append('tags', 'refreshed');
+  form.append('savepath', savePath); form.append('category', c.category); form.append('tags', c.tags);
   form.append('contentLayout', 'Original'); form.append('autoTMM', 'false');
   form.append('stopped', a.strategy === 'same_path' ? 'true' : 'false');   // на старом пути — сначала переименовать корень и перепроверить
   await qb(c.instance, '/torrents/add', form);
