@@ -54,7 +54,8 @@ const editionLabel = (t?: string) => t?.match(LONG_EDITION)?.[0] ?? 'обычн�
 const codecRank = (a: { codec?: string; lossless?: boolean }) =>
   a.lossless || /TrueHD|DTS-HD\s*MA|FLAC|PCM|LPCM/i.test(a.codec ?? '') ? 3 : /DTS|EAC3|E-AC-3|DD\+/i.test(a.codec ?? '') ? 2 : /AC3|AAC|Opus/i.test(a.codec ?? '') ? 1 : 0;
 type DubState = 'none' | 'unknown' | 'lossy' | 'lossless';
-interface DubInfo { score?: number; state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; bestPatched?: boolean; }
+interface DubTrack { codec?: string; lossless?: boolean; channels?: number; atmos?: boolean; bitrateKbps?: number; }
+interface DubInfo { track?: DubTrack; state: DubState; label: string; authors: string[]; offRank?: number; offLabel?: string; bestCustom?: boolean; bestPatched?: boolean; }
 /** Дубляж со вставками: расширенные/недублированные сцены закрыты закадром («+ MVO», «вставки», «на Extended Edition»). */
 export const PATCHED = /встав|insert|\+\s*(mvo|dvo|avo|vo|закадр|многогол|двухгол|одногол)|на\s+(extended|расширенн|режисс)/i;
 const normAuthor = (a: string) => a.toLowerCase().replace(/[^a-zа-яё0-9]/g, '');
@@ -78,7 +79,7 @@ function dubInfo(s: ReleaseSpec, opts: { claims?: boolean; ext?: boolean; otherO
     const best = [...dubs].sort((x, y) => dubScore(y) - dubScore(x))[0];
     const lbl = (a: typeof best) => `${a.codec ?? '?'}${a.channels ? ` ${a.channels}ch` : ''}${a.author ? ' (' + a.author + ')' : ''}`;
     const off = dubs.filter(isOfficial).sort((x, y) => codecRank(y) - codecRank(x))[0];
-    return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best), score: dubScore(best),
+    return { state: ll.length ? 'lossless' : 'lossy', label: lbl(best), track: best,
       authors: dubs.map(a => realAuthor(a.author)).filter((x): x is string => Boolean(x)),
       offRank: off ? codecRank(off) : undefined, offLabel: off ? lbl(off) : undefined, bestCustom: isCustom(best), bestPatched: PATCHED.test(tx(best)) };
   }
@@ -90,6 +91,24 @@ const dubRankOf = (s: DubState) => (s === 'lossless' ? 2 : s === 'lossy' ? 1 : 0
 /** Качество дорожки дубляжа: класс (lossless/lossy) важнее всего, затем каналы, затем битрейт (целыми Мбит/с — шум < 1 Мбит/с не считаем), затем Atmos. Цель — 7.1 Atmos на 4-8 Мбит/с. */
 function dubScore(a: { lossless?: boolean; codec?: string; channels?: number; atmos?: boolean; bitrateKbps?: number }) {
   return codecRank(a) * 100 + (a.channels ?? 0) * 2 + Math.floor((a.bitrateKbps ?? 0) / 1000) + (a.atmos ? 1 : 0);
+}
+/**
+ * Сравнение лучшего дубляжа двух сторон: класс → каналы → битрейт (целыми Мбит/с) → Atmos.
+ * Битрейт сравниваем только когда он известен у ОБЕИХ сторон — иначе дорожка без BitRate в MediaInfo
+ * (частый случай для lossless-дорожек на файле на диске — Облачный атлас, 2026-11-10) проигрывает любому
+ * кандидату с распарсенным битрейтом просто по умолчанию ?? 0, а не по качеству.
+ */
+function dubCmp(a?: DubTrack, b?: DubTrack): -1 | 0 | 1 {
+  if (!a || !b) return 0;
+  const rc = cmp(codecRank(a), codecRank(b));
+  if (rc) return rc;
+  const cc = cmp(a.channels ?? 0, b.channels ?? 0);
+  if (cc) return cc;
+  if (a.bitrateKbps !== undefined && b.bitrateKbps !== undefined) {
+    const bc = cmp(Math.floor(a.bitrateKbps / 1000), Math.floor(b.bitrateKbps / 1000));
+    if (bc) return bc;
+  }
+  return cmp(a.atmos ? 1 : 0, b.atmos ? 1 : 0);
 }
 
 // ---------- оригинал: тай-брейк, бонус, если дубляж/MVO/культовые ничего не решили ----------
@@ -140,7 +159,7 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
     russian_dub: ruOriginal ? { dim: 'русский дубляж', current: '—', candidate: '—', cmp: 0 }
       : { dim: 'русский дубляж', current: cur.label, candidate: cnd.label,
           cmp: cur.state === 'unknown' || cnd.state === 'unknown' ? 0
-            : cur.score !== undefined && cnd.score !== undefined ? cmp(cur.score, cnd.score) : cmp(dubRankOf(cur.state), dubRankOf(cnd.state)) },
+            : cur.track && cnd.track ? dubCmp(cur.track, cnd.track) : cmp(dubRankOf(cur.state), dubRankOf(cnd.state)) },
     original_audio: { dim: ruOriginal ? 'оригинал (рус.)' : 'оригинал', current: orig.c.label, candidate: orig.n.label, cmp: cmp(orig.c.r, orig.n.r) },
     subtitles: { dim: 'рус. субтитры', current: rusSubs(current) ? 'есть' : 'нет', candidate: rusSubs(cand) ? 'есть' : 'нет', cmp: cmp(rusSubs(current), rusSubs(cand)) },
     tracker: { dim: 'трекер', current: ctx.currentTracker ?? '?', candidate: ctx.candidateTracker ?? cand.tracker ?? '?', cmp: cmp(trackerRank(ctx.currentTracker, prio), trackerRank(ctx.candidateTracker ?? cand.tracker, prio)) },
@@ -175,6 +194,9 @@ export function judge(current: ReleaseSpec, cand: ReleaseSpec, rules: Rules, ctx
   if (vb && nb && nb < vb * (1 - VIDEO_BITRATE_DROP_FRAC))
     flags.push(`видео битрейт ниже (${(vb / 1000).toFixed(1)} → ${(nb / 1000).toFixed(1)} Мбит/с, ${Math.round((nb / vb - 1) * 100)}%)`);
   if (!ruOriginal && cur.state === 'lossless' && cnd.state === 'lossy') flags.push(`дубляж lossless → lossy (${cur.label} → ${cnd.label})`);
+  if (!ruOriginal && cur.track && cnd.track && codecRank(cur.track) === codecRank(cnd.track) && (cur.track.channels ?? 0) === (cnd.track.channels ?? 0)
+    && (cur.track.bitrateKbps === undefined) !== (cnd.track.bitrateKbps === undefined))
+    flags.push(`битрейт дубляжа неизвестен у одной из сторон — сравнение по битрейту не учтено (${cur.label} / ${cnd.label})`);
   if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestCustom) flags.push(`дубляж лучше за счёт любительской сборки (${cnd.label})`);
   if (!ruOriginal && all.russian_dub.cmp > 0 && cnd.bestPatched) flags.push(`дубляж со вставками закадрового перевода (${cnd.label})`);
   if (!ruOriginal && cur.offRank !== undefined && cnd.offRank !== undefined && cnd.offRank < cur.offRank)

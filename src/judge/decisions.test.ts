@@ -251,6 +251,18 @@ test('[11-08] дубляж: битрейт — тай-брейк в целых �
   const dLossy = (bitrateKbps?: number) => ({ kind: 'dub', author: 'Пифагор', codec: 'AC3', channels: 6, bitrateKbps, title: 'Dub Пифагор' });
   assert.equal(v(spec({}, [dLossy(384)]), spec({}, [dLossy(448)])).verdict, 'KEEP');   // 384 → 448 kbps — внутри одного Мбит/с, шум
 });
+// ---------- 2026-11-10 ----------
+test('[11-10] Облачный атлас: дубляж без BitRate в MediaInfo файла (DTS-HD MA 6ch) ← TrueHD 6ch 1640 kbps — не считать 0, тай: KEEP, не UPGRADE', () => {
+  const curDub: A = { kind: 'dub', author: 'Невафильм', codec: 'DTS-HD MA', lossless: true, channels: 6, title: 'Дубляж - Blu-Ray Rus' };   // bitrateKbps не распарсился (реальный случай, движок на диске)
+  const cndAc3: A = { kind: 'dub', author: 'Невафильм', codec: 'AC3', lossless: false, channels: 6, title: 'Dub, Невафильм' } as A;
+  (cndAc3 as any).bitrateKbps = 640;
+  const cndTrueHD: A = { kind: 'dub', author: 'Невафильм', codec: 'TrueHD', lossless: true, channels: 6, title: 'Dub, Невафильм' } as A;
+  (cndTrueHD as any).bitrateKbps = 1640;
+  const j = v(spec(DV7FEL, [curDub]), spec({ ...DV7FEL, dvLayer: 'FEL' }, [cndAc3, cndTrueHD]));
+  assert.equal(j.dims.find(d => d.dim === 'русский дубляж')!.cmp, 0, 'неизвестный битрейт на одной стороне — не поражение и не победа');
+  assert.notEqual(j.verdict, 'UPGRADE');
+  assert.ok(j.check?.some(c => /битрейт дубляжа неизвестен/.test(c)), JSON.stringify(j.check));
+});
 test('[11-08] не для всех фильмов оригинал английский: немецкая дорожка не считается «оригиналом» на японском фильме', () => {
   const audio = (withGerman: boolean) => {
     const a: any[] = [
