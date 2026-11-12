@@ -9,8 +9,8 @@ import { radarr } from './radarr.js';
 import { config } from './config.js';
 import { sendText } from './telegram.js';
 import { currentTorrent } from './currentTopic.js';
-import { qb } from './refresh/clients.js';
-import { sameFile } from './refresh/plan.js';
+import { qb } from './qbit.js';
+import { sameFile } from './torrentFetch.js';
 import { trackerFor } from './trackers/registry.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS replace_job (
